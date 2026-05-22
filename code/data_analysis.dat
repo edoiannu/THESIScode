@@ -1,8 +1,8 @@
 # initial state {p, m} (pure or maximally mixed)
 INSTATE     p
 # alpha over kappa value
-ALPHA       1.0
+ALPHA       0.4
 # eta value
-ETA         0.4
+ETA         1.0
 # chunk dimension (number of trajectories of whom the daemonic observables are computed simultaneously)
 CHUNKDIM    100
