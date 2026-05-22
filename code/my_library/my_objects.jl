@@ -123,27 +123,22 @@ end
 # - the collapse operator c
 # - the detection efficiency η
 # - the detection angle ϕ
-# function dyne_kraus(HS, ρ_0, tlist, c, η, ϕ)
 function dyne_kraus(HS, ρ_t, cops, η, heterodyne)
-    # ρ_t = ρ_0
     num = nothing
-    ρ_tdt = nothing             # evolved stated
+    ρ_tdt = nothing             # evolved states
     dy_t = nothing
-    # results = [ρ_t]
     # photo-current
-    dy(ρ, dW) = sqrt(η) * tr((cops + dagger(cops)) * ρ) * dt + dW
-    # for i in tlist
+    dy(ρ, c) = sqrt(η) * tr((c + dagger(c)) * ρ) * dt + sqrt(dt) * randn()
     # kraus operator
+    M(ρ, c) = I - 1im * HS * dt - 0.5 * dagger(c) * c * dt + sqrt(η) * c * dy(ρ, c)
     if heterodyne == true
-        dy_t = dy(ρ_t, sqrt(dt) * (randn() + 1im * randn()) / sqrt(2))
+        M_dy = M(ρ_t, (cops + 1im * cops) / sqrt(2))
     else
-        dy_t = dy(ρ_t, sqrt(dt) * randn())
+        M_dy = M(ρ_t, cops)
     end
-    M = I - 1im * HS * dt - 0.5 * dagger(cops) * cops * dt + sqrt(η) * cops * dy_t
-    num = M * ρ_t * dagger(M) + (1 - η) * cops * ρ_t * dagger(cops) * dt
+    # M = I - 1im * HS * dt - 0.5 * dagger(cops) * cops * dt + sqrt(η) * cops * dy_t
+    num = M_dy * ρ_t * dagger(M_dy) + (1 - η) * cops * ρ_t * dagger(cops) * dt
     ρ_tdt = num / tr(num)
-    # push!(results, ρ_t)
-    # end
     return ρ_tdt
 end
 
