@@ -62,7 +62,7 @@ process = "pd_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ) 
 NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)                                       # number of time intervals
 tlist = range(0, t_f, NUMBER_OF_TIMEINTERVALS + 1)                              # list of time intervals ("+ 1" because it starts with t=0)
 
-println("System evolution (initial ", instate, " state, α/κ = ", α_over_κ, ", η = ", η, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, "number of trajectories)...")
+println("System evolution (initial ", instate, " state, α/κ = ", α_over_κ, ", η = ", η, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " number of trajectories)...")
 
 prog_time = 0                                           # progressive run time
 start_time = time()                                     # initial run time

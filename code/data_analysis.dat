@@ -1,5 +1,5 @@
 # initial state {p, m} (pure or maximally mixed)
-INSTATE     p
+INSTATE     m
 # alpha over kappa value
 ALPHA       0.4
 # eta value

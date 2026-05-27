@@ -1,3 +1,5 @@
+# initial state {p (pure), m (maximally mixed)}
+INSTATE     p
 # evolution final time
 FINALT      10
 # time subintervals width

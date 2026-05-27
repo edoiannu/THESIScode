@@ -47,21 +47,19 @@ end
 if ARGS[1] == "hod"
     ϕ = parse(Int64, ARGS[2])
     # α/κ and η from command line
-    α_over_κ = parse(Float64, ARGS[3])
-    η = parse(Float64, ARGS[4])
+    η = parse(Float64, ARGS[3])
     clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x
     # collapse operator for simulation
     cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
     # process name
-    process = "hod" * string(ϕ) * "_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)  
+    process = "hod" * string(ϕ) * "_eta" * string(η) 
 elseif ARGS[1] == "hed"
     heterodyne = true
     cops = c
     # α/κ and η from command line
-    α_over_κ = parse(Float64, ARGS[2])
-    η = parse(Float64, ARGS[3])
+    η = parse(Float64, ARGS[2])
     # process name
-    process = "hed_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)
+    process = "hed_eta" * string(η)
 else
     error("Detection type must be homodyne ('hod') or heterodyne ('hed').")
 end
