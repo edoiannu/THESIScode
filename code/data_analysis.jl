@@ -1,4 +1,4 @@
-# === DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION ===
+# === DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATE DYNAMICS ===
 
 # import required libraries and objects
 include("my_library/my_objects.jl")
@@ -17,9 +17,12 @@ chunk_dim = nothing                 # chunk dimension (for parallel computing)
 NUMBER_OF_TRAJECTORIES = nothing    # number of evolved trajectories
 NUMBER_OF_TIMEINTERVALS = nothing   # number of time intervals per trajectory
 
-println("=== DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATES' DYNAMICS ===")
-println("Type considered unravelling {pd, hod[detection_angle], hed}:")
-unravelling = readline()
+println("=== DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATES DYNAMICS ===")
+unravelling = ARGS[1]
+
+if length(ARGS) != 1
+    error("Type considered unravelling {pd, hod[detection_angle], hed}")
+end
 
 # reading from file data analysis parameters
 for line in eachline(inputfile)

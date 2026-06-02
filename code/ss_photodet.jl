@@ -1,4 +1,4 @@
-# === STEADY STATES DYNAMICS OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===
+# === STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===
 
 # import required libraries and objects
 include("my_library/my_objects.jl")
@@ -15,6 +15,8 @@ dt = nothing                        # time step
 NUMBER_OF_ALPHAPOINTS = nothing     # number of α/κ points
 NUMBER_OF_TRAJECTORIES = nothing    # number of trajectories to evolve
 η = nothing                         # detection efficiency
+
+println("=== STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===")
 
 # reading from file simulation the remaining parameters
 for line in eachline(inputfile)
@@ -44,6 +46,12 @@ end
 
 η = parse(Float64, ARGS[1])
 process = "pd_eta" * string(η)  # process name
+
+# detection efficiency check
+if η < 0 || η > 1
+    error("The detection efficiency must be between 0 and 1.")
+end
+
 
 dα = Float64(α_f / NUMBER_OF_ALPHAPOINTS)           # α/κ interval width
 NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)           # number of time intervals

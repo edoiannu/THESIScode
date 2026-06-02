@@ -1,4 +1,4 @@
-# === UNCONDITIONAL EVOLUTION ===
+# === SYSTEM UNCONDITIONAL EVOLUTION ===
 
 # including required libraries
 include("my_library/my_objects.jl")
@@ -13,20 +13,22 @@ instate = nothing           # single character variable describing the evolution
 α_over_κ = nothing          # driving field intensity over the system emission rate
 η = nothing                 # detection efficiency
 
+println("SYSTEM UNCONDITIONAL EVOLUTION")
+
 # passing alpha/kappa and eta from command line
 α_over_κ = parse(Float64, ARGS[1])
 η = parse(Float64, ARGS[2])
 
-# data and results storing directory
+"""# data and results storing directory
 if η == 0.4 && α_over_κ == 1.0
     directory = "figure1/"
 elseif η == 1.0 && α_over_κ == 0.4
     directory = "figure2/"
 else
     directory = "./"
-end
+end"""
 
-for line in eachline(directory * inputfile)
+for line in eachline(inputfile)
     parts = split(line) # using split() words separated by a space within the argument string become the elements of a list
     # it skips empty lines, controls that there are exactly two elements per line (otherwise it skips the line) and skip the comments
     if isempty(line) || length(parts) != 2 || startswith(line, "#")

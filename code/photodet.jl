@@ -1,4 +1,4 @@
-# === DYNAMICS OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===
+# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===
 
 # import required libraries and objects
 include("my_library/my_objects.jl")
@@ -17,15 +17,17 @@ NUMBER_OF_TRAJECTORIES = nothing    # number of trajectories to evolve
 η = nothing                         # detection efficiency
 chunk_dim = nothing                 # chunk dimension (number of trajectories to evolve simultaneously)
 
-println("=== DYNAMICS OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===")
-println("Type simulation parameters separated by a space:")
-println("Initial_state {p (pure state), m (maximally mixed state)} α/κ (driving field intensity over the system emission rate) η (detection efficiency)")
-args = split(readline())
+println("=== DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===")
 
 # passing initial state, α/κ and eta from command line
-instate = args[1]
-α_over_κ = parse(Float64, args[2])
-η = parse(Float64, args[3])
+instate = ARGS[1]
+α_over_κ = parse(Float64, ARGS[2])
+η = parse(Float64, ARGS[3])
+
+# number of arguments check
+if length(ARGS) != 3
+    error("Type simulation parameters separated by a space: initial_state {p (pure state), m (maximally mixed state)} α/κ (driving field intensity over system emission rate) η (detection efficiency).")
+end
 
 # reading from file the remaining simulation parameters
 for line in eachline(inputfile)
@@ -56,6 +58,11 @@ elseif instate == "m"
     global ρ_0 = ComplexF64[0.50000000 0.00000000 ; 0.00000000 0.50000000]  # maximally mixed state (one half the identity matrix)
 else
     error("The initial state must be pure (p) or maximally mixed (m).")
+end
+
+# detection efficiency check
+if η < 0 || η > 1
+    error("The detection efficiency must be between 0 and 1.")
 end
 
 process = "pd_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)    # process name

@@ -1,4 +1,4 @@
-# === DYNAMICS OF A SYSTEM SUBJECT TO A CONTINOUS GENERIC DYNE DETECTION ===
+# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS GENERIC DYNE DETECTION ===
 
 # import required libraries and objects
 include("my_library/my_objects.jl")
@@ -20,35 +20,35 @@ c = σ_m                             # collapse operator
 chunk_dim = nothing                 # chunk dimension (number of trajectories to evolve simultaneously)
 heterodyne = false                  # heterodyne detection
 
-println("=== DYNAMICS OF A SYSTEM SUBJECT TO A CONTINOUS GENERIC DYNE DETECTION ===")
-println("Type simulation parameters separated by a space:")
-println("For homodyne detection: 'hod' ϕ (detection angle) initial_state {p (pure state), m (maximally mixed state)} α/κ (driving field intensity over the system emission rate) η (detection efficiency).")
-println("For heterodyne detection: 'hed' initial_state {p (pure state), m (maximally mixed state)} α/κ (driving field intensity over the system emission rate) η (detection efficiency).")
-args = split(readline())
+println("=== DYNAMICS SIMULTAION OF A SYSTEM SUBJECT TO A CONTINOUS GENERIC DYNE DETECTION ===")
 
 # detection type from command line
-if args[1] == "hod"
-    ϕ = parse(Int64, args[2])
+if ARGS[1] == "hod"
+    ϕ = parse(Int64, ARGS[2])
     # initial state, α/κ and η from command line
-    instate = args[3]
-    α_over_κ = parse(Float64, args[4])
-    η = parse(Float64, args[5])
+    instate = ARGS[3]
+    α_over_κ = parse(Float64, ARGS[4])
+    η = parse(Float64, ARGS[5])
     clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x
     # collapse operator for simulation
     cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
     # process name
     process = "hod" * string(ϕ) * "_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)  
-elseif args[1] == "hed"
+elseif ARGS[1] == "hed"
     heterodyne = true
     cops = c
     # initial state, α/κ and η from command line
-    instate = args[2]
-    α_over_κ = parse(Float64, args[3])
-    η = parse(Float64, args[4])
+    instate = ARGS[2]
+    α_over_κ = parse(Float64, ARGS[3])
+    η = parse(Float64, ARGS[4])
     # process name
     process = "hed_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)
 else
     error("Detection type must be homodyne ('hod') or heterodyne ('hed').")
+end
+
+if length(ARGS) != 4 && length(ARGS) != 5
+    error("Type simulation parameters separated by a space:\n- For homodyne detection: 'hod' ϕ (detection angle) initial_state {p (pure state), m (maximally mixed state)} α/κ (driving field intensity over the system emission rate) η (detection efficiency).For homodyne detection: 'hod' ϕ (detection angle) initial_state {p (pure state), m (maximally mixed state)} α/κ (driving field intensity over the system emission rate) η (detection efficiency).")
 end
 
 # reading from file simulation the remaining parameters
@@ -80,6 +80,11 @@ elseif instate == "m"
     global ρ_0 = ComplexF64[0.50000000 0.00000000 ; 0.00000000 0.50000000]  # maximally mixed state (one half the identity matrix)
 else
     error("The initial state must be pure (p) or maximally mixed (m).")
+end
+
+# detection efficiency check
+if η < 0 || η > 1
+    error("The detection efficiency must be between 0 and 1.")
 end
 
 NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)           # number of time intervals
