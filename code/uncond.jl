@@ -81,12 +81,12 @@ end
 # saving on a file the results
 println("Printing results...")
 
-open(directory * "results/erg_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+open("results/erg_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
     for (t, erg) in zip(tlist, erg_results)
         @printf(io, "%.3f\t%.8f\n", t, erg)
     end
 end
-open(directory * "results/cap_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+open("results/cap_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
     for (t, cap) in zip(tlist, cap_results)
         @printf(io, "%.3f\t%.8f\n", t, cap)
     end
