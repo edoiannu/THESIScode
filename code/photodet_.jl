@@ -1,24 +1,6 @@
-# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS GENERIC DYNE DETECTION ===
+# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===
 
 using Distributed   # for parallel computing
-using Printf        # to write on formatted files
-using JLD2          # to print trajectories on a file
-
-# preliminar control over arguments number
-if length(ARGS) < 1 || length(ARGS) > 2
-    error("Type decetion type:\n- For homodyne: 'hod' ϕ\n- For heterodyne: 'hed'")
-end
-
-# reading parameter from terminal
-const det_type = ARGS[1]
-if det_type == "hod"
-    const ϕ_val = parse(Int64, ARGS[2])
-    const het_val = false
-elseif det_type == "hed"
-    const het_val = true
-else
-    error("Detection type must be homodyne ('hod') or heterodyne ('hed').")
-end
 
 # variables initialization
 inputfile = "input.dat"
@@ -68,12 +50,7 @@ if η_val < 0 || η_val > 1
     error("The detection efficiency must be between 0 and 1.")
 end
 
-# process name generation
-if det_type == "hod"
-    process = "hod" * string(ϕ_val) * "_" * instate * "_eta" * string(η_val) * "_alpha" * string(α_val)  
-else
-    process = "hed_" * instate * "_eta" * string(η_val) * "_alpha" * string(α_val)
-end
+process = "pd_" * instate * "_eta" * string(η_val) * "_alpha" * string(α_val)    # process name
 
 # workers initialization
 @everywhere begin
@@ -84,19 +61,9 @@ end
     # constants definition for each core
     α_over_κ = $α_val
     η = $η_val
-    heterodyne = $het_val
-    ϕ = $ϕ_val
     c = σ_m
     finalt = $t_f
     dt = $deltat
-    
-    # collaps operator definition
-    clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x
-    if $det_type == "hod"
-        const cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
-    else
-        const cops = c
-    end
     
     NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)
     tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)
@@ -106,7 +73,7 @@ end
         ρ_t = ρ_0   # initial state at time t=0
         results = [ρ_t]
         for i in tlist
-            ρ_tdt = dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne)
+            ρ_tdt = photodet_kraus(HS(α_over_κ), ρ_t, c, η)
             push!(results, ρ_tdt)
             ρ_t = ρ_tdt
         end
@@ -158,23 +125,3 @@ end
 
 end_time = time()
 println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
-
-"""# La funzione pevolution ora ha pieno accesso a tutte le costanti di calcolo, versione ottimizzata senza push! dinamici
-# pevolution function definition
-function pevolution(ρ_0)
-    # pre-allocation of the exact space for all time intervals
-    len_tlist = length(tlist)
-    results = Vector{Matrix{ComplexF64}}(undef, len_tlist)
-    
-    results[1] = ρ_0   # initial state at time t=0
-    
-    # Usiamo un indice per evitare l'allocazione di memoria dinamica
-    idx = 1
-    for i in 1:(len_tlist - 1)
-        # Supponiamo che dyne_kraus accetti l'operatore AND se necessario: flag & 0x01
-        ρ_tdt = dyne_kraus(HS(α_over_κ), results[idx], cops, η, heterodyne)
-        idx += 1
-        results[idx] = ρ_tdt
-    end
-    return results
-end"""
