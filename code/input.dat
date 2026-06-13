@@ -5,9 +5,9 @@ FINALT      10
 # time subintervals width
 dt          0.001
 # number of trajectories
-NTRAJ       5000
+NTRAJ       1000
 # chunk dimension for parallel computing
-CHUNKDIM    500
+CHUNKDIM    100
 # === FOR STEADY STATES EVOLUTION ===
 # finale alpha over kappa value
 FINALALPHA      2
