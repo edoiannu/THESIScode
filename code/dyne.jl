@@ -123,7 +123,7 @@ println("System evolution (initial ", instate, " state, α/κ = ", α_val, ", η
 
 prog_time = 0                                           # progressive run time
 start_time = time()                                     # initial run time
-chunk_ind = 0                                           # to count the chunk number
+chunk_ind = 0                                           # to count the chunks
 chunk_num = Int64(NUMBER_OF_TRAJECTORIES / chunk_dim)   # number of chunk
 
 # we compute how many trajectories within a chunck are up to each worker

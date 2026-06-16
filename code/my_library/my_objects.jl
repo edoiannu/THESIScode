@@ -178,14 +178,14 @@ function av_ergotropy(ρ)
         erg = ergotropy(ρ_l)
         sum += erg
         sum2 += erg * erg
-        # sum3 += erg * erg * erg
+        sum3 += erg * erg * erg
     end
 
     mean = sum / Ntraj
     mean2 = sum2 / Ntraj
-    # mean3 = sum3 / Ntraj
+    mean3 = sum3 / Ntraj
 
-    return [mean, mean2]
+    return [mean, mean2, mean3]
 end
 
 # function that computes the capacity for a given state ρ
@@ -211,12 +211,12 @@ function av_capacity(ρ)
         erg = capacity(ρ_l)
         sum += erg
         sum2 += erg * erg
-        # sum3 += erg * erg * erg
+        sum3 += erg * erg * erg
     end
 
     mean = sum / Ntraj
     mean2 = sum2 / Ntraj
-    # mean3 = sum3 / Ntraj
+    mean3 = sum3 / Ntraj
 
-    return [mean, mean2]
+    return [mean, mean2, mean3]
 end
