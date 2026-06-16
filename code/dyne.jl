@@ -2,8 +2,6 @@
 
 # including required libraries
 using Distributed   # for parallel computing
-# using Printf        # to write on formatted files
-# using JLD2          # to print trajectories on a file
 
 # preliminar control over arguments number
 if length(ARGS) < 1 || length(ARGS) > 2
@@ -16,6 +14,7 @@ if det_type == "hod"
     const ϕ_val = parse(Int64, ARGS[2])
     const het_val = false
 elseif det_type == "hed"
+    const ϕ_val = 0         # dummy value: ϕ is irrelevant for heterodyne detection, but must be defined to avoid errors
     const het_val = true
 else
     error("Detection type must be homodyne ('hod') or heterodyne ('hed').")

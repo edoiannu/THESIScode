@@ -16,7 +16,7 @@ end
 const unravelling = ARGS[1]
 
 # variables initialization
-inputfile = "data_analysis.dat"     # name of the file from which we read the simulation's parameters
+inputfile = "input.dat"     # name of the file from which we read the simulation's parameters
 instate = nothing                   # single character variable that indicates the simulation's initial state
 α_over_κ = nothing                  # resonant field intensity over emitting rate value
 η = nothing                         # detection efficiency value

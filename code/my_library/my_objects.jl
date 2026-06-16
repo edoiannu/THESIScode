@@ -170,7 +170,7 @@ end
 function av_ergotropy(ρ)
     sum = 0
     sum2 = 0
-    # sum3 = 0
+    sum3 = 0
     Ntraj = length(ρ)   # nummber of trajectories
     # iterations over the trajectories
     for l in 1:Ntraj
@@ -203,7 +203,7 @@ end
 function av_capacity(ρ)
     sum = 0
     sum2 = 0
-    # sum3 = 0
+    sum3 = 0
     Ntraj = length(ρ)   # nummber of trajectories
     # iterations over the trajectories
     for l in 1:Ntraj
