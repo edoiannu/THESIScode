@@ -1,40 +1,37 @@
 # === DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATE DYNAMICS ===
 
-# import required libraries and objects
-include("my_library/my_objects.jl")
-using Printf        # to write on formatted files
-using Distributed   # for parallel computing
-using JLD2          # to print trajectories on a file
-
-# variables initialization
-inputfile = "data_analysis.dat"     # input file
-unravelling = nothing               # type of unravveling {pd (photodection), phi0 (homodyne detection with phi = 0°), phi90 (homodyne detection with phi = 90°) or hd (heterodyne detection)}
-instate = nothing                   # initial state as a single character variable describing the evolution initial state {p (pure), m (maximally mixed)}
-ϕ = nothing                 
-α_over_κ = nothing                  # driving field intensity over the system emission rate
-η = nothing                         # detection efficiency
-chunk_dim = nothing                 # chunk dimension (for parallel computing)
-NUMBER_OF_TRAJECTORIES = nothing    # number of evolved trajectories
-NUMBER_OF_TIMEINTERVALS = nothing   # number of time intervals per trajectory
-
-println("=== DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATES DYNAMICS ===")
-unravelling = ARGS[1]
-
-if length(ARGS) != 1
-    error("Type considered unravelling {pd, hod[detection_angle], hed}")
+using Printf            # to write on formatted files
+using Distributed       # for parallel computing
+@everywhere begin
+    using JLD2          # to load trajectories from file
+    include("my_library/my_objects.jl")
 end
 
-# reading from file data analysis parameters
+# preliminar control over arguments number
+if length(ARGS) != 1
+    error("Type considered unravelling: {pd, hod[detection_angle], hed}")
+end
+
+# reading parameter from terminal
+const unravelling = ARGS[1]
+
+# variables initialization
+inputfile = "data_analysis.dat"
+instate = nothing
+α_over_κ = nothing
+η = nothing
+chunk_dim = nothing
+NUMBER_OF_TRAJECTORIES = nothing
+
+# reading data analysis parameters from file
 for line in eachline(inputfile)
-    parts = split(line) # using split() words separated by a space within the argument string become the elements of a list
-    # it skips empty lines, controls that there are exactly two elements per line (otherwise it skips the line) and skip the comments
+    parts = split(line)
     if isempty(line) || length(parts) != 2 || startswith(line, "#")
         continue
     end
     key, value = parts
     if key == "INSTATE"
-    # 'global' indicates a global variable assignment
-        global instate = value 
+        global instate = value
     elseif key == "ALPHA"
         global α_over_κ = parse(Float64, value)
     elseif key == "ETA"
@@ -44,9 +41,10 @@ for line in eachline(inputfile)
     end
 end
 
-process = unravelling * "_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)  # process name
+# reading simulation parameters from file
+t_f = nothing
+dt = nothing
 
-# reading the number of trajectories and time intervals
 for line in eachline("input.dat")
     parts = split(line)
     if isempty(line) || length(parts) != 2 || startswith(line, "#")
@@ -62,35 +60,61 @@ for line in eachline("input.dat")
     end
 end
 
-NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)           # number of time intervals
-tlist = range(0, t_f, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
+NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)
+tlist = range(0, t_f, NUMBER_OF_TIMEINTERVALS + 1)
 
-prog_erg_sum = nothing  # list of the progressive sum and squared sum of the daemonic ergotropies
-prog_cap_sum = nothing  # list of the progressive sum and squadre sum of the daemonic capacities
-erg_mean = []           # list to fill with the averaged over the trajectories ergotropies at each time
-cap_mean = []           # list to fill with the averaged over the trajectories capacities at each time
-erg_var = []            # list to fill with the variance of the ergotropies at each time
-cap_var = []            # list to fill with the variance of the capacities at each time
-# erg_skw = []            # list to fill with the skewness of the capacities at each time
-# cap_skw = []            # list to fill with the skewness of the capacities at each time
+# process name generation
+process = unravelling * "_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)
 
+println("=== DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATES DYNAMICS ===")
 println("Averaged quantities computation (unravelling: ", unravelling, ", initial ", instate, " state, α/κ = ", α_over_κ, ", η = ", η, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " trajectories)...")
 
-prog_time = 0                                           # progressive run time
-start_time = time()                                     # total run time
-chunk_num = Int64(NUMBER_OF_TRAJECTORIES / chunk_dim)   # total number of chunk
+prog_erg_sum = nothing
+prog_cap_sum = nothing
+prog_time = 0
+start_time = time()
+chunk_ind = 0
+chunk_num = Int64(NUMBER_OF_TRAJECTORIES / chunk_dim)
+
+# we compute how many trajectories within a chunk are up to each worker
+traj_per_worker = div(chunk_dim, nworkers())
+# division remainder
+rem = chunk_dim % nworkers()
 
 for i in 1:chunk_num
-    states = []
-    ρ = []
-    chunk_start_time = time()  # we start counting the execution time of the chunk
-    @load "states/" * process * "_chunk" * string(i) * ".jld2" states
-    for j in 1:NUMBER_OF_TIMEINTERVALS
-        push!(ρ, [states[k][j] for k in 1:chunk_dim])
+    global chunk_ind += 1
+    chunk_start_time = time()
+
+    # we collect results from each worker file and compute ergotropy and capacity in parallel
+    chunk_erg_results = Vector{Any}(undef, nworkers())
+    chunk_cap_results = Vector{Any}(undef, nworkers())
+
+    @sync begin
+        for (w_idx, w) in enumerate(workers())
+            n_per_worker = traj_per_worker + (w_idx <= rem ? 1 : 0)
+            @async begin
+                result = remotecall_fetch(w, chunk_ind, w_idx, n_per_worker, NUMBER_OF_TIMEINTERVALS) do c_id, w_id, n_traj, n_intervals
+                    # each worker loads its own file
+                    local_states = nothing
+                    filename = "states/$(process)_chunk$(c_id)_worker$(w_id).jld2"
+                    @load filename local_states
+
+                    # each worker computes ergotropy and capacity on its own trajectories
+                    ρ = [[local_states[k][j] for k in 1:n_traj] for j in 1:n_intervals]
+                    erg_local = map(av_ergotropy, ρ)    # ergotropia demonica media del worker
+                    cap_local = map(av_capacity, ρ)
+                    return (n_traj .* erg_local ./ chunk_dim, n_traj .* cap_local ./ chunk_dim)
+                end
+                chunk_erg_results[w_idx] = result[1]    # list lunga nworkers: ogni elemento ha l'andamento dell'ergotropia demonica del w_ixd-esimo worker
+                chunk_cap_results[w_idx] = result[2]
+            end
+        end
     end
-    # we map the cores on the time intervals to compute the averaged daemonic ergotropy
-    erg_chunk = pmap(av_ergotropy, ρ)
-    cap_chunk = pmap(av_capacity, ρ)
+
+    # aggregate results from all workers for this chunk
+    erg_chunk = sum(chunk_erg_results)
+    cap_chunk = sum(chunk_cap_results)
+
     if prog_erg_sum === nothing
         global prog_erg_sum = erg_chunk
     else
@@ -101,22 +125,22 @@ for i in 1:chunk_num
     else
         global prog_cap_sum += cap_chunk
     end
-    chunk_end_time = time()     # we end counting the execution time of the chunk
+
+    chunk_end_time = time()
     global prog_time += chunk_end_time - chunk_start_time
     println(round(Int64(i * chunk_dim) / NUMBER_OF_TRAJECTORIES * 100, digits = 1), "%. Run time: ", round(prog_time, digits = 2), "s.")
 end
 
+# averages and variances computation
 erg_mean = [x[1] for x in prog_erg_sum] ./ chunk_num
 cap_mean = [x[1] for x in prog_cap_sum] ./ chunk_num
-erg_var = [x[2] for x in prog_erg_sum] ./ chunk_num - erg_mean .^ 2
-cap_var = [x[2] for x in prog_cap_sum] ./ chunk_num - cap_mean .^ 2
+erg_var  = [x[2] for x in prog_erg_sum] ./ chunk_num - erg_mean .^ 2
+cap_var  = [x[2] for x in prog_cap_sum] ./ chunk_num - cap_mean .^ 2
 
-end_time = time()   # final run time
+end_time = time()
+println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 
-# total execution time
-println("Total run time: ", round(end_time - start_time, digits = 2), "s")
-
-# we print the results on a file
+# printing results on files
 println("Printing results...")
 open("results/erg_" * process * ".dat", "w") do io
     for (t, erg) in zip(tlist, erg_mean)
