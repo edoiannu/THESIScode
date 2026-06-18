@@ -130,8 +130,8 @@ erg_mean = [x[1] for x in prog_erg_sum] ./ chunk_num
 cap_mean = [x[1] for x in prog_cap_sum] ./ chunk_num
 erg_var  = [x[2] for x in prog_erg_sum] ./ chunk_num - erg_mean .^ 2
 cap_var  = [x[2] for x in prog_cap_sum] ./ chunk_num - cap_mean .^ 2
-erg_skw  = [x[3] for x in prog_erg_sum] ./ chunk_num - 3 .* erg_mean .* [x[2] for x in prog_erg_sum] + 2 .* erg_mean .^ 3
-cap_skw  = [x[3] for x in prog_cap_sum] ./ chunk_num - 3 .* cap_mean .* [x[2] for x in prog_cap_sum] + 2 .* cap_mean .^ 3
+erg_skw  = [x[3] for x in prog_erg_sum] ./ chunk_num - 3 .* erg_mean .* [x[2] for x in prog_erg_sum] ./ chunk_num + 2 .* erg_mean .^ 3
+cap_skw  = [x[3] for x in prog_cap_sum] ./ chunk_num - 3 .* cap_mean .* [x[2] for x in prog_cap_sum] ./ chunk_num + 2 .* cap_mean .^ 3
 
 end_time = time()
 println("Total run time: ", round(end_time - start_time, digits = 2), "s.")

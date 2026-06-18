@@ -1,9 +1,9 @@
 # initial state {p (pure), m (maximally mixed)}
-INSTATE     m
+INSTATE     p
 # alpha over kappa value
-ALPHA       0.4
+ALPHA       1.0
 # eta value
-ETA         1.0
+ETA         0.4
 # evolution final time
 FINALT      10
 # time subintervals width
