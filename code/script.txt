@@ -1,5 +1,3 @@
-julia -p 12 photodet.jl
-julia -p 12 data_analysis.jl pd
 make cleanstates
 julia -p 12 dyne.jl hod 0
 julia -p 12 data_analysis.jl hod0

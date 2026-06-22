@@ -61,12 +61,18 @@ process = unravelling * "_" * instate * "_eta" * string(η) * "_alpha" * string(
 println("=== DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATES DYNAMICS ===")
 println("Averaged quantities computation (unravelling: ", unravelling, ", initial ", instate, " state, α/κ = ", α_over_κ, ", η = ", η, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " trajectories)...")
 
-prog_erg_sum = nothing                                  # progressive daemonic ergotropy sum
-prog_cap_sum = nothing                                  # progressive daemonic capacity sum
-prog_time = 0                                           # progressive run time
-start_time = time()                                     # initial run time
-chunk_ind = 0                                           # to count the chunks
-chunk_num = Int64(NUMBER_OF_TRAJECTORIES / chunk_dim)   # total number of chunks
+# target times and indices
+target_times = [2.5, 5.0, 7.5]
+target_indices = [findfirst(t -> abs(t - target) < 1e-9, tlist) for target in target_times]
+
+prog_erg_sum = nothing                                          # progressive daemonic ergotropy sum
+prog_cap_sum = nothing                                          # progressive daemonic capacity sum
+prog_erg_histo = [Float64[] for _ in 1:length(target_times)]    # list to progressively fill with the single states' ergotropy of each target time
+prog_cap_histo = [Float64[] for _ in 1:length(target_times)]    # list to progressively fill with the single states' capacity of each target time
+prog_time = 0                                                   # progressive run time
+start_time = time()                                             # initial run time
+chunk_ind = 0                                                   # to count the chunks
+chunk_num = Int64(NUMBER_OF_TRAJECTORIES / chunk_dim)           # total number of chunks
 
 # we compute how many trajectories within a chunk are up to each worker
 traj_per_worker = div(chunk_dim, nworkers())
@@ -77,9 +83,12 @@ for i in 1:chunk_num
     global chunk_ind += 1
     chunk_start_time = time()
 
-    # we collect results from each worker file and compute ergotropy and capacity in parallel
+    # lists to fill with the daemonic ergotropy and capacity evolutions of this chunk's trajectories
     chunk_erg_results = Vector{Any}(undef, nworkers())
     chunk_cap_results = Vector{Any}(undef, nworkers())
+    # lists to fill with the single states ergotropy and capacity at target times of this chunk's trajectories
+    chunk_erg_histo = Vector{Any}(undef, nworkers())
+    chunk_cap_histo = Vector{Any}(undef, nworkers())
 
     @sync begin
         for (w_idx, w) in enumerate(workers())
@@ -90,23 +99,33 @@ for i in 1:chunk_num
                     local_states = nothing
                     filename = "states/$(process)_chunk$(c_id)_worker$(w_id).jld2"
                     @load filename local_states
-
                     # each worker computes daemonic ergotropy and capacity on its own trajectories
                     ρ = [[local_states[k][j] for k in 1:n_traj] for j in 1:n_intervals] # ρ[j] = list of states at time step j across this worker's trajectories
+                    erg_histo_local = [map(ergotropy, ρ[j]) for j in target_indices]    # list of lists of the single states ergotropy at target times of the trajectories assigned to this worker
+                    cap_histo_local = [map(capacity, ρ[j]) for j in target_indices]     # same for the capacity
                     erg_local = map(av_ergotropy, ρ)    # daemonic ergotropy's evolutions of the trajectories assigned to this worker
                     cap_local = map(av_capacity, ρ)     # same for the daemonic capacity
                     # we return the list of the daemonic quantities weighted with respect to the fraction of the chunk's trajectories assigned to this worker
-                    return (n_traj .* erg_local ./ chunk_dim, n_traj .* cap_local ./ chunk_dim)
+                    return (n_traj .* erg_local ./ chunk_dim, n_traj .* cap_local ./ chunk_dim, erg_histo_local, cap_histo_local) 
                 end
                 chunk_erg_results[w_idx] = result[1]    # each element of this list is the daemonic ergotropy evolution of the w_ixd-th worker
                 chunk_cap_results[w_idx] = result[2]    # same for the daemonic capacity
+                chunk_erg_histo[w_idx] = result[3]      # each element of this list is the list of the lists single states ergotropy at the given target times of the w_idx-th worker (workers -> target times -> number of trajectory assigned to the worker)
+                chunk_cap_histo[w_idx] = result[4]      # same for the capacity
             end
         end
     end
 
     # aggregate results from all workers for this chunk
+
     erg_chunk = sum(chunk_erg_results)
     cap_chunk = sum(chunk_cap_results)
+    
+    for i_t in 1:length(target_times)
+        # merge data from all workers for time step i_t in this chunk, then append directly to the global container
+        global prog_erg_histo[i_t] = append!(prog_erg_histo[i_t], vcat([chunk_erg_histo[w][i_t] for w in 1:nworkers()]...))
+        global prog_cap_histo[i_t] = append!(prog_cap_histo[i_t], vcat([chunk_cap_histo[w][i_t] for w in 1:nworkers()]...))
+    end
 
     # aggregate the results of this chunk to the progressive sums of the daemonic quantities
     if prog_erg_sum === nothing
@@ -166,5 +185,17 @@ end
 open("results/skw_cap_" * process * ".dat", "w") do io
     for (t, capskw) in zip(tlist, cap_skw)
         @printf(io, "%.3f\t%.8f\n", t, capskw)
+    end
+end
+for (i_t, t) in enumerate(target_times)
+    open("results/histo_erg_" * process * "_t$(t).dat", "w") do io
+        for val in prog_erg_histo[i_t]
+            @printf(io, "%.8f\n", val)
+        end
+    end
+    open("results/histo_cap_" * process * "_t$(t).dat", "w") do io
+        for val in prog_cap_histo[i_t]
+            @printf(io, "%.8f\n", val)
+        end
     end
 end
