@@ -1,4 +1,4 @@
-# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===
+# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINUOUS PHOTO-DETECTION ===
 
 # including required libraries
 using Distributed   # for parallel computing
