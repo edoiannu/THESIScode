@@ -8,7 +8,8 @@ using JLD2          # to print trajectories on a file
 # variables initialization
 inputfile = "input.dat"             # name of the file from which we read the simulation's parameters
 unravelling = nothing               # type of unravveling
-instate = nothing                   # single character variable that indicates the simulation's initial state 
+instate = nothing                   # single character variable that indicates the simulation's initial state
+ρ_0 = nothing                       # initial state 
 η_val = nothing                     # detection efficiency value
 t_f = nothing                       # simulation's final time
 deltat = nothing                    # simulation's time step
@@ -77,13 +78,14 @@ process = "pd_eta" * string(η_val)  # process name
     c = σ_m         # collapse operator
     finalt = $t_f
     dt = $deltat
+    ρ0 = $ρ_0
 
     NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)           # number of time intervals
     tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
 
     # pevolution function definition
     function pevolution(α_over_κ)
-        ρ_t = ρ_0   # initial state at time t=0
+        ρ_t = ρ0   # initial state at time t=0
         ρ_tdt = nothing
         for i in tlist
             ρ_tdt = photodet_kraus(HS(α_over_κ), ρ_t, σ_m, η)
@@ -101,8 +103,6 @@ dα = Float64(α_f / NUMBER_OF_ALPHAPOINTS)           # α/κ interval width
 # lists to fill with steady states ergotropy and capacity
 ss_ergotropies = Float64[]
 ss_capacities = Float64[]
-prog_ss_erg_sum = nothing                                  # progressive steady states daemonic ergotropy sum
-prog_ss_cap_sum = nothing                                  # progressive steady states daemonic capacity sum
 prog_time = 0           # progressive run time
 start_time = time()     # initial run time
 αind = 0                                                # to count the α values
@@ -116,13 +116,15 @@ rem = chunk_dim % nworkers()
 
 for α in αlist
     global αind += 1
-    prog_ss = []                # list to progressively fill with the steady states
     chunk_start_time = time()   # we start counting the execution time of the chunk
+    prog_ss_erg_sum = 0         # progressive steady states daemonic ergotropy sum
+    prog_ss_cap_sum = 0         # progressive steady states daemonic capacity sum
     for i in 1:chunk_num
-        global chunk_ind += 1
+        # global chunk_ind += 1
         # lists to fill with the chunk's steady states of each trajectory
         chunk_ss_erg = Vector{Float64}(undef, nworkers())
         chunk_ss_cap = Vector{Float64}(undef, nworkers())
+        # chunk_ss = Array{Any}(undef, nworkers())
 
         # we prepare the groups of trajectories per worker
         # sync: wait for each worker to finish its task
@@ -139,28 +141,31 @@ for α in αlist
                         local_ss = [pevolution(α) for j in 1:n_traj]
                         local_ss_erg = av_ergotropy(local_ss)[1]
                         local_ss_cap = av_capacity(local_ss)[1]
-                        return (n_traj * local_ss_erg / chunk_dim, n_traj * local_ss_cap / chunk_dim)
+                        # return (n_traj * local_ss_erg / chunk_dim, n_traj * local_ss_cap / chunk_dim)
+                        return (local_ss_erg, local_ss_cap)
+                        # return local_ss
                     end
                     chunk_ss_erg[w_idx] = results[1]
                     chunk_ss_cap[w_idx] = results[2]
+                    # chunk_ss[w_idx] = results
                 end
             end
         end
 
         # aggregate results from all workers for this chunk
-        ss_erg_appo = sum(chunk_ss_erg)
-        ss_cap_appo = sum(chunk_ss_cap)
+        ss_erg_appo = sum(chunk_ss_erg) / nworkers()
+        ss_cap_appo = sum(chunk_ss_cap) / nworkers()
 
         # aggregate the results of this chunk to the progressive sums of the daemonic quantities
-        if prog_ss_erg_sum === nothing
-            global prog_ss_erg_sum = ss_erg_appo
+        if prog_ss_erg_sum == 0
+            prog_ss_erg_sum = ss_erg_appo
         else
-            global prog_ss_erg_sum += ss_erg_appo
+            prog_ss_erg_sum += ss_erg_appo
         end
-        if prog_ss_cap_sum === nothing
-            global prog_ss_cap_sum = ss_cap_appo
+        if prog_ss_cap_sum == 0
+            prog_ss_cap_sum = ss_cap_appo
         else
-            global prog_ss_cap_sum += ss_cap_appo
+            prog_ss_cap_sum += ss_cap_appo
         end
     end
 

@@ -16,6 +16,6 @@ CHUNKDIM    100
 # finale alpha over kappa value
 FINALALPHA  2
 # alpha over kappa points number
-ALPHAPOINTS 100
+ALPHAPOINTS 50
 # === HISTOGRAM'S SNAPSHOT ===
 HISTOTIME   2.5 5.0 7.5
