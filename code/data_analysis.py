@@ -75,7 +75,6 @@ def plot_mean_erg():
     ax.grid(True, linestyle = ':', alpha = 0.6)
     ax.set_ylim(0, 0.3) if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
     ax.legend(loc = "upper right" if (instate == "p" and alpha_over_kappa == 1.0 and eta == 0.4) else "lower right", ncol = 2)
-    # ax.legend(loc = "lower right", ncol = 2)
 
     fig.suptitle(
             f"Mean values (erg): initial pure state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
@@ -350,12 +349,12 @@ def plot_histograms():
                 histtype = "step",
                 linewidth = 1.5,
                 color = unr_colors[j],
-                label = unr_labels[j],
-                density = True,
+                label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$",
+                # density = True,
             )
-        ax.set_title(f"Ergotropy distribution at t = {t} s: initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
-        ax.set_xlabel(r"$\epsilon$")
-        ax.set_ylabel("Density")
+        ax.set_title(f"Trajectories' ergotropy distribution at t = {t} s:\n initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
+        ax.set_xlabel(r"$\bar{\epsilon}_{unr, \eta}$")
+        # ax.set_ylabel("Density")
         ax.grid(True, linestyle = ':', alpha = 0.6)
         ax.legend(loc = "upper right")
         plt.tight_layout()
@@ -372,27 +371,27 @@ def plot_histograms():
                 histtype = "step",
                 linewidth = 1.5,
                 color = unr_colors[j],
-                label = unr_labels[j],
-                density = True,
+                label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$",
+                # density = True,
             )
-        ax.set_title(f"Capacity distribution at t = {t} s: initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
-        ax.set_xlabel(r"$\mathcal{C}$")
-        ax.set_ylabel("Density")
+        ax.set_title(f"Trajectories' capacity distribution at t = {t} s:\n initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
+        ax.set_xlabel(r"$\bar{\mathcal{C}}_{unr, \eta}$")
+        # ax.set_ylabel("Density")
         ax.grid(True, linestyle = ':', alpha = 0.6)
-        ax.legend(loc = "upper right")
+        ax.legend(loc = "upper left" if (instate == "m" and eta == 1.0 and alpha_over_kappa == 0.4) else "upper right")
         plt.tight_layout()
         plt.savefig(plotsdir + "histo_cap_" + process + "_t" + str(t) + ".png", dpi = 300)
         plt.close(fig)
 
 def plot_ss_erg():
     """Plots the steady states (expectation value) of the ergotropy against the rate between the driving field intensity and the emission rate for every unravelling, plus E^ss_unc(t) and erg^ss_unc(t)"""
-    fig, ax = plt.subplots(figsize=(6,5))
+    fig, ax = plt.subplots(figsize=(7,5))
     etavalues = [0.1, 0.7]
     etalinestyle = [":", "-."]
     for j in range(len(unr)):
         for i in range(len(etavalues)):
             data = np.loadtxt(resultsdir + "ss_erg_" + unr[j] + "_eta" + str(etavalues[i]) + ".dat")
-            ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\epsilon^{ss}_{" + unr_labels[j] + ", " + str((etavalues[i])) + "}", linestyle = etalinestyle[i])
+            ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\epsilon^{ss}_{" + unr_labels[j] + ", " + str((etavalues[i])) + r"}$", linestyle = etalinestyle[i])
 
     data = np.loadtxt(resultsdir + "ss_erg_unc.dat")
     ax.plot(data[:,0], data[:,1], color = "black", label = r"$\epsilon^{ss}_{unc}$")
@@ -406,7 +405,7 @@ def plot_ss_erg():
     ax.legend(loc = "lower right", ncol = 4)
 
     plt.suptitle(
-        f"Steady state daemonic ergotropy for different unravellings as function of " r"$\alpha / \kappa$" f" with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+        f"Steady state daemonic ergotropy for different unravellings as function of " r"$\alpha / \kappa$" f"\n with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
     )
 
 
@@ -416,24 +415,23 @@ def plot_ss_erg():
 
 def plot_ss_cap():
     """Plots the steady states (expectation value) of the capacity against the rate between the driving field intensity and the emission rate for every unravelling, plus E^ss_unc(t) and erg^ss_unc(t)"""
-    fig, ax = plt.subplots(figsize=(6,5))
+    fig, ax = plt.subplots(figsize=(7,5))
     etavalues = [0.1, 0.7]
     etalinestyle = [":", "-."]
     for j in range(len(unr)):
         for i in range(len(etavalues)):
             data = np.loadtxt(resultsdir + "ss_cap_" + unr[j] + "_eta" + str(etavalues[i]) + ".dat")
-            ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\epsilon^{ss}_{" + unr_labels[j] + ", " + str((etavalues[i])) + "}", linestyle = etalinestyle[i])
+            ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\epsilon^{ss}_{" + unr_labels[j] + ", " + str((etavalues[i])) + r"}$", linestyle = etalinestyle[i])
 
     data = np.loadtxt(resultsdir + "ss_cap_unc.dat")
     ax.plot(data[:,0], data[:,1], color = "black", label = r"$\epsilon^{ss}_{unc}$")
-
     ax.set_xlabel(r"$\kappa / \alpha$")
     ax.set_ylabel(r"$\bar{\epsilon}_{ss}$")
     ax.grid(True, linestyle = ":", alpha = 0.6)
-    ax.legend(loc = "lower right", ncol = 4)
+    ax.legend(loc = "lower left", ncol = 2)
 
     plt.suptitle(
-        f"Steady state daemonic capacity for different unravellings as function of " r"$\alpha / \kappa$" f" with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+        f"Steady state daemonic capacity for different unravellings as function of " r"$\alpha / \kappa$" f"\n with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
     )
 
     plt.tight_layout()
