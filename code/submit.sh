@@ -6,4 +6,4 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30G
 
-julia --project=. -p $SLURM_NTASKS dyne.jl hod 90 p 1.0 0.4
+julia --project=. -p $SLURM_NTASKS phodet.jl
