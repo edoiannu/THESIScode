@@ -1,23 +1,42 @@
-# === STEADY STATES DYNAMICS OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===
+# === STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINIUOUS PHOTO-DETECTION ===
 
 # import required libraries and objects
-include("my_library/my_objects.jl")
 using Printf        # to write on formatted files
 using Distributed   # for parallel computing
 using JLD2          # to print trajectories on a file
 
+# preliminar control over arguments number
+if length(ARGS) < 1 || length(ARGS) > 2
+    error("Type decetion type:\n- For homodyne: 'hod' [detection angle]\n- For heterodyne: 'hed'")
+end
+
+# reading parameter from terminal
+const det_type = ARGS[1]    # 'const' variables cannot be modified anymore
+if det_type == "hod"
+    const ϕ_val = parse(Int64, ARGS[2])
+    const het_val = false
+elseif det_type == "hed"
+    const ϕ_val = 0         # dummy value: ϕ is irrelevant for heterodyne detection, but must be defined to avoid errors
+    const het_val = true
+else
+    error("Detection type must be homodyne ('hod') or heterodyne ('hed').")
+end
+
 # variables initialization
-inputfile = "input.dat"             # input file
+inputfile = "input.dat"             # name of the file from which we read the simulation's parameters
 unravelling = nothing               # type of unravveling
-heterodyne = false                  # heterodyne detection
-ϕ = nothing                         # photo-detection angle
-c = σ_m                             # collapse operator
-t_f = nothing                       # evolution final time
-dt = nothing                        # time step
-α_f = nothing                       # finale value α/κ
+instate = nothing                   # single character variable that indicates the simulation's initial state
+ρ_0 = nothing                       # initial state 
+η_val = nothing                     # detection efficiency value
+t_f = nothing                       # simulation's final time
+deltat = nothing                    # simulation's time step
+α_f = nothing                       # final α/κ value (resonant field intensity over emitting rate value)
 NUMBER_OF_ALPHAPOINTS = nothing     # number of α/κ points
-NUMBER_OF_TRAJECTORIES = nothing    # number of trajectories to evolve
-η = nothing                         # detection efficiency
+NUMBER_OF_TRAJECTORIES = nothing    # simulation's number of trajectories
+chunk_dim = nothing                 # number of trajectories to evolve simultaneously
+
+
+println("=== STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS HOMODYNE DETECTION ===")
 
 # reading from file simulation the remaining parameters
 for line in eachline(inputfile)
@@ -29,88 +48,157 @@ for line in eachline(inputfile)
     key, value = parts
     if key == "INSTATE"
     # 'global' indicates a global variable assignment
-        global instate = value 
+        global instate = value
+    elseif key == "ETA"
+        global η_val = parse(Float64, value) 
     elseif key == "FINALT"
         global t_f = parse(Float64, value)
     elseif key == "dt"
-        global dt = parse(Float64, value)
+        global deltat = parse(Float64, value)
     elseif key == "FINALALPHA"
         global α_f = parse(Float64, value)
     elseif key == "ALPHAPOINTS"
         global NUMBER_OF_ALPHAPOINTS = parse(Int64, value)
     elseif key == "NTRAJ"
         global NUMBER_OF_TRAJECTORIES = parse(Int64, value)
+    elseif key == "CHUNKDIM"
+        global chunk_dim = parse(Int64, value)
     end
 end
 
-# detection type from command line
-if ARGS[1] == "hod"
-    ϕ = parse(Int64, ARGS[2])
-    # α/κ and η from command line
-    η = parse(Float64, ARGS[3])
-    clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x
-    # collapse operator for simulation
-    cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
-    # process name
-    process = "hod" * string(ϕ) * "_eta" * string(η) 
-elseif ARGS[1] == "hed"
-    heterodyne = true
-    cops = c
-    # α/κ and η from command line
-    η = parse(Float64, ARGS[2])
-    # process name
-    process = "hed_eta" * string(η)
+# initial state as density matrix (complex in general)
+if instate == "p"
+    global ρ_0 = ComplexF64[0.00000000 0.00000000 ; 0.00000000 1.00000000] # ground state
+    # for the exited state
+    # ρ_0 = [1 0 ; 0 0]
+elseif instate == "m"
+    global ρ_0 = ComplexF64[0.50000000 0.00000000 ; 0.00000000 0.50000000] # maximally mixed state (one half the identity matrix)
 else
-    error("Detection type must be homodyne ('hod') or heterodyne ('hed').")
+    error("The initial state must be pure (p) or maximally mixed (m).")
 end
 
-dα = Float64(α_f / NUMBER_OF_ALPHAPOINTS)           # α/κ interval width
-NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)           # number of time intervals
-tlist = range(0, t_f, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
-αlist = range(0, α_f, NUMBER_OF_ALPHAPOINTS + 1)    # list of α/κ values
+# detection efficiency check
+if η_val < 0 || η_val > 1
+    error("The detection efficiency must be between 0 and 1.")
+end
 
-ss_ergotropies = []
-ss_capacities = []
+# process name generation
+if det_type == "hod"
+    process = "hod" * string(ϕ_val) * "_" * string(η_val)  
+else
+    process = "hed_eta" * string(η_val)
+end
+
+# workers initialization
+@everywhere begin
+    # libraries inclusion for each worker
+    include("my_library/my_objects.jl")
+
+    # constants definition for each core
+    η = $η_val
+    c = σ_m         # collapse operator
+    finalt = $t_f
+    dt = $deltat
+    ρ0 = $ρ_0
+
+    NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)           # number of time intervals
+    tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
+
+    # pevolution function definition
+    function pevolution(α_over_κ)
+        ρ_t = ρ0   # initial state at time t=0
+        ρ_tdt = nothing
+        for i in tlist
+            ρ_tdt = dyne_kraus(HS(α_over_κ), ρ_t, σ_m, η, het_val)
+            ρ_t = ρ_tdt
+        end
+        return ρ_tdt
+    end
+end
 
 println("Steady states evolutions (η = ", η, ", ", NUMBER_OF_ALPHAPOINTS, " α/κ points, ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " trajectories)...")
 
-function pevolution(α_over_κ)
-    # initial state as density matrix (complex in general)
-    if instate == "p"
-        ρ_0 = ComplexF64[0.00000000 0.00000000 ; 0.00000000 1.00000000] # ground state
-        # for the exited state
-        # ρ_0 = [1 0 ; 0 0]
-    elseif instate == "m"
-        ρ_0 = ComplexF64[0.50000000 0.00000000 ; 0.00000000 0.50000000] # maximally mixed state (one half the identity matrix)
-    else
-        println("The initial state must be pure (p) or maximally mixed (m).")
-    end
-    ρ_t = ρ_0   # initial state at time t=0
-    ρ_tdt = nothing
-    for i in tlist
-        ρ_tdt = dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne)
-        ρ_t = ρ_tdt
-    end
-    return ρ_tdt
-end
+dα = Float64(α_f / NUMBER_OF_ALPHAPOINTS)           # α/κ interval width
+αlist = range(0, α_f, NUMBER_OF_ALPHAPOINTS + 1)    # list of α/κ values
 
+# lists to fill with steady states ergotropy and capacity
+ss_ergotropies = Float64[]
+ss_capacities = Float64[]
 prog_time = 0           # progressive run time
-start_time = time()     # total run time
-αind = 0                # index of the list of the α values
+start_time = time()     # initial run time
+αind = 0                                                # to count the α values
+chunk_ind = 0                                           # to count the chunk number
+chunk_num = Int64(NUMBER_OF_TRAJECTORIES / chunk_dim)   # number of chunk
+
+# we compute how many trajectories within a chunck are up to each worker
+traj_per_worker = div(chunk_dim , nworkers())
+# division remainder (it is possible that the number of trajectory per chunk is not a multiple of the number of workers)
+rem = chunk_dim % nworkers()
 
 for α in αlist
     global αind += 1
-    steadystates = []
     chunk_start_time = time()   # we start counting the execution time of the chunk
-    steadystates = pmap(pevolution, [α for j in 1:NUMBER_OF_TRAJECTORIES])
-    push!(ss_ergotropies, av_ergotropy(steadystates)[1])
-    push!(ss_capacities, av_capacity(steadystates)[1])
-    chunk_end_time = time()     # we end conuting the execution time of the chunk
+    prog_ss_erg_sum = 0         # progressive steady states daemonic ergotropy sum
+    prog_ss_cap_sum = 0         # progressive steady states daemonic capacity sum
+    for i in 1:chunk_num
+        # global chunk_ind += 1
+        # lists to fill with the chunk's steady states of each trajectory
+        chunk_ss_erg = Vector{Float64}(undef, nworkers())
+        chunk_ss_cap = Vector{Float64}(undef, nworkers())
+        # chunk_ss = Array{Any}(undef, nworkers())
+
+        # we prepare the groups of trajectories per worker
+        # sync: wait for each worker to finish its task
+        @sync begin
+            # cycle over workers
+            for (w_idx, w) in enumerate(workers())
+                # we assign an extra trajectory to the first 'rem' workers
+                n_per_worker = traj_per_worker + (w_idx <= rem ? 1 : 0)
+                # remotecall assigns a task to a specific worker
+                @async begin
+                    # local steady-states
+                    results = remotecall_fetch(w, ρ_0, n_per_worker) do rho, n_traj
+                        # each worker locally executes its sub-chunk
+                        local_ss = [pevolution(α) for j in 1:n_traj]
+                        local_ss_erg = av_ergotropy(local_ss)[1]
+                        local_ss_cap = av_capacity(local_ss)[1]
+                        # return (n_traj * local_ss_erg / chunk_dim, n_traj * local_ss_cap / chunk_dim)
+                        return (local_ss_erg, local_ss_cap)
+                        # return local_ss
+                    end
+                    chunk_ss_erg[w_idx] = results[1]
+                    chunk_ss_cap[w_idx] = results[2]
+                    # chunk_ss[w_idx] = results
+                end
+            end
+        end
+
+        # aggregate results from all workers for this chunk
+        ss_erg_appo = sum(chunk_ss_erg) / nworkers()
+        ss_cap_appo = sum(chunk_ss_cap) / nworkers()
+
+        # aggregate the results of this chunk to the progressive sums of the daemonic quantities
+        if prog_ss_erg_sum == 0
+            prog_ss_erg_sum = ss_erg_appo
+        else
+            prog_ss_erg_sum += ss_erg_appo
+        end
+        if prog_ss_cap_sum == 0
+            prog_ss_cap_sum = ss_cap_appo
+        else
+            prog_ss_cap_sum += ss_cap_appo
+        end
+    end
+
+    push!(ss_ergotropies, prog_ss_erg_sum / chunk_num)
+    push!(ss_capacities, prog_ss_cap_sum / chunk_num)
+    chunk_end_time = time()     # we end counting the execution time of the chunk
     global prog_time += chunk_end_time - chunk_start_time
-    println("α/κ = ", round(α, digits = 5), ", ", round(Int64(αind) / NUMBER_OF_ALPHAPOINTS * 100, digits = 1), "%. Run time: ", round(prog_time, digits = 2), "s.")
+    println("α/κ = ", round(α, digits = 5), ", ", round(αind / NUMBER_OF_ALPHAPOINTS * 100, digits = 1), "%. Run time: ", round(prog_time, digits = 2), "s.")
 end
 
-end_time = time()       # final run time
+end_time = time()
+println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 
 # we print the results on a file
 println("Printing results...")

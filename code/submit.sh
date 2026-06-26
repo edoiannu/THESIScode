@@ -6,4 +6,4 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30G
 
-julia --project=. -p $SLURM_NTASKS phodet.jl
+julia --project=. -p $SLURM_NTASKS photodet.jl
