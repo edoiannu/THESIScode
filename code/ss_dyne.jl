@@ -84,7 +84,7 @@ end
 
 # process name generation
 if det_type == "hod"
-    process = "hod" * string(ϕ_val) * "_" * string(η_val)  
+    process = "hod" * string(ϕ_val) * "_eta" * string(η_val)  
 else
     process = "hed_eta" * string(η_val)
 end
@@ -96,10 +96,20 @@ end
 
     # constants definition for each core
     η = $η_val
+    heterodyne = $het_val
+    ϕ = $ϕ_val
     c = σ_m         # collapse operator
     finalt = $t_f
     dt = $deltat
     ρ0 = $ρ_0
+
+    clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x    # to set at zero "numerical zeros"
+    # collapse operator definition
+    if $det_type == "hod"
+        const cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
+    else
+        const cops = c
+    end
 
     NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)           # number of time intervals
     tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
@@ -109,7 +119,7 @@ end
         ρ_t = ρ0   # initial state at time t=0
         ρ_tdt = nothing
         for i in tlist
-            ρ_tdt = dyne_kraus(HS(α_over_κ), ρ_t, σ_m, η, het_val)
+            ρ_tdt = dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne)
             ρ_t = ρ_tdt
         end
         return ρ_tdt
