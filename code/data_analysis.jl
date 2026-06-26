@@ -16,7 +16,7 @@ end
 const unravelling = ARGS[1]
 
 # variables initialization
-inputfile = "input.dat"     # name of the file from which we read the simulation's parameters
+inputfile = "input.dat"             # name of the file from which we read the simulation's parameters
 instate = nothing                   # single character variable that indicates the simulation's initial state
 α_over_κ = nothing                  # resonant field intensity over emitting rate value
 η = nothing                         # detection efficiency value
@@ -24,16 +24,24 @@ t_f = nothing                       # simulation's final time
 dt = nothing                        # simulation's time step
 NUMBER_OF_TRAJECTORIES = nothing    # simulation's number of trajectories
 chunk_dim = nothing                 # number of trajectories to analyse simultaneously
+target_times = nothing
 
 # reading data analysis parameters from file
 for line in eachline(inputfile)
     # to split line's elements
     parts = split(line)
+    nparts = length(parts)
     # conditions to skip a line
-    if isempty(line) || length(parts) != 2 || startswith(line, "#")
+    if isempty(line) || startswith(line, "#")
         continue
     end
-    key, value = parts
+    # key, value = parts
+    key = parts[1]
+    if key != "HISTOTIME"
+        value = parts[2]
+    else
+        value = [parse(Float64,parts[i]) for i in 2:nparts]
+    end
     if key == "INSTATE"
         # "global" indicates a global variable
         global instate = value
@@ -49,6 +57,8 @@ for line in eachline(inputfile)
         global NUMBER_OF_TRAJECTORIES = parse(Int64, value)
     elseif key == "CHUNKDIM"
         global chunk_dim = parse(Int64, value)
+    elseif key == "HISTOTIME"
+        global target_times = value
     end
 end
 

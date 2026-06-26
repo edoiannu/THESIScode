@@ -14,6 +14,8 @@ NTRAJ       1000
 CHUNKDIM    100
 # === FOR STEADY STATES EVOLUTION ===
 # finale alpha over kappa value
-FINALALPHA      2
+FINALALPHA  2
 # alpha over kappa points number
-ALPHAPOINTS     100
+ALPHAPOINTS 100
+# === HISTOGRAM'S SNAPSHOT ===
+HISTOTIME   2.5 5.0 7.5

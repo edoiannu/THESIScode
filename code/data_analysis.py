@@ -12,16 +12,22 @@ instate = None
 t_f = None
 dt = None
 NUMBER_OF_TRAJECTORIES = None
+target_times = None
 
 with open("input.dat", "r") as f:
     # cycle on every line of the file
     for line in f:
         # words separated by a space within a line become the elements of a list
         parts = line.split()
+        nparts = len(parts)
         # it skips empty lines, controls that there are exactly two elements per line (otherwise it skips the line) and skip the comments
-        if not line or len(parts) != 2 or line.startswith("#"):
+        if not line or line.startswith("#"):
             continue
-        key, value = parts
+        key = parts[0]
+        if key != "HISTOTIME":
+            value = parts[1]
+        else:
+            value = [float(parts[i]) for i in range(1,nparts)]
         if key == "INSTATE":
             instate = value
         elif key == "ALPHA":
@@ -34,6 +40,8 @@ with open("input.dat", "r") as f:
             dt = float(value)
         elif key == "NTRAJ":
             NUMBER_OF_TRAJECTORIES = int(value)
+        elif key == "HISTOTIME":
+            target_times = value
 
 NUMBER_OF_TIMEINTERVALS = int(t_f / dt) # number of time intervals
 resultsdir = "results/"                 # results directory
@@ -45,6 +53,7 @@ unr = ["pd", "hod0", "hod90", "hed"]                                            
 unr_colors = ["red", "blue", "orange", "green"]                                                         # colors for the unravellings
 unr_labels = ["PD", r"HoD \left< \hat{\sigma_x} \right>", r"HoD \left< \hat{\sigma_y} \right>", "HeD"]  # unravelling labels
 
+process = instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa)
 
 # ============================== MEAN VALUES ==============================
 
@@ -53,7 +62,7 @@ def plot_mean_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     data = np.loadtxt(resultsdir + "en_unc_" + instate + "_alpha" + str(alpha_over_kappa) + ".dat")
@@ -73,7 +82,7 @@ def plot_mean_erg():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "mean_erg_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "mean_erg_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -82,7 +91,7 @@ def plot_mean_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "cap_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     data = np.loadtxt(resultsdir + "cap_unc_" + instate + "_alpha" + str(alpha_over_kappa) + ".dat")
@@ -99,7 +108,7 @@ def plot_mean_cap():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "mean_cap_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "mean_cap_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -110,7 +119,7 @@ def plot_var_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "var_erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "var_erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -124,7 +133,7 @@ def plot_var_erg():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "var_erg_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "var_erg_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -133,7 +142,7 @@ def plot_var_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "var_cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "var_cap_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -147,7 +156,7 @@ def plot_var_cap():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "var_cap_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "var_cap_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -158,8 +167,8 @@ def plot_norm_var_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        mean = np.loadtxt(resultsdir + "erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
-        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        mean = np.loadtxt(resultsdir + "erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
+        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         norm_var = []
         tlist = []
         for x, y in zip(mean, var):
@@ -180,7 +189,7 @@ def plot_norm_var_erg():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "norm_var_erg_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "norm_var_erg_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -189,8 +198,8 @@ def plot_norm_var_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        mean = np.loadtxt(resultsdir + "cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
-        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        mean = np.loadtxt(resultsdir + "cap_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
+        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         norm_var = []
         tlist = []
         for x, y in zip(mean, var):
@@ -211,7 +220,7 @@ def plot_norm_var_cap():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "norm_var_cap_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "norm_var_cap_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -222,7 +231,7 @@ def plot_skw_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -236,7 +245,7 @@ def plot_skw_erg():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "skw_erg_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "skw_erg_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -245,7 +254,7 @@ def plot_skw_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -259,7 +268,7 @@ def plot_skw_cap():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "skw_cap_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "skw_cap_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -270,8 +279,8 @@ def plot_norm_skw_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
-        skw = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
+        skw = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         norm_skw = []
         tlist = []
         for x, y in zip(var, skw):
@@ -294,7 +303,7 @@ def plot_norm_skw_erg():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "norm_skw_erg_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "norm_skw_erg_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 
@@ -303,8 +312,8 @@ def plot_norm_skw_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
-        skw = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
+        skw = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         norm_skw = []
         tlist = []
         for x, y in zip(var, skw):
@@ -325,23 +334,21 @@ def plot_norm_skw_cap():
         )
 
     plt.tight_layout()
-    plt.savefig(plotsdir + "norm_skw_cap_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + ".png", dpi = 300)
+    plt.savefig(plotsdir + "norm_skw_cap_" + process + ".png", dpi = 300)
     plt.close(fig)
 
 def plot_histograms():
     """Histogram generation for ergotropy and capacity at target times.
- 
     For every target time, all unravellings are overlaid on the same axes
     and drawn as step outlines (histtype='step') instead of filled bars,
     so that the distributions can be compared directly.
     """
-    target_times = [2.5, 5.0, 7.5]
  
     for t in target_times:
         # ---------- ergotropy ----------
         fig, ax = plt.subplots(figsize=(6, 5))
         for j in range(len(unr)):
-            data_erg = np.loadtxt(resultsdir + "histo_erg_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + "_t" + str(t) + ".dat")
+            data_erg = np.loadtxt(resultsdir + "histo_erg_" + unr[j] + "_" + process + "_t" + str(t) + ".dat")
             ax.hist(
                 data_erg,
                 bins = 50,
@@ -357,13 +364,13 @@ def plot_histograms():
         ax.grid(True, linestyle = ':', alpha = 0.6)
         ax.legend(loc = "upper right")
         plt.tight_layout()
-        plt.savefig(plotsdir + "histo_erg_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + "_t" + str(t) + ".png", dpi = 300)
+        plt.savefig(plotsdir + "histo_erg_" + process + "_t" + str(t) + ".png", dpi = 300)
         plt.close(fig)
  
         # ---------- capacity ----------
         fig, ax = plt.subplots(figsize=(6, 5))
         for j in range(len(unr)):
-            data_cap = np.loadtxt(resultsdir + "histo_cap_" + unr[j] + "_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + "_t" + str(t) + ".dat")
+            data_cap = np.loadtxt(resultsdir + "histo_cap_" + unr[j] + "_" + process + "_t" + str(t) + ".dat")
             ax.hist(
                 data_cap,
                 bins = 50,
@@ -379,7 +386,7 @@ def plot_histograms():
         ax.grid(True, linestyle = ':', alpha = 0.6)
         ax.legend(loc = "upper right")
         plt.tight_layout()
-        plt.savefig(plotsdir + "histo_cap_" + instate + "_eta" + str(eta) + "_alpha" + str(alpha_over_kappa) + "_t" + str(t) + ".png", dpi = 300)
+        plt.savefig(plotsdir + "histo_cap_" + process + "_t" + str(t) + ".png", dpi = 300)
         plt.close(fig)
 
 # ============================== MAIN ==============================
