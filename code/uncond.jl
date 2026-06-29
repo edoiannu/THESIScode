@@ -13,21 +13,6 @@ instate = nothing           # single character variable describing the evolution
 α_over_κ = nothing          # driving field intensity over the system emission rate
 η = nothing                 # detection efficiency
 
-println("SYSTEM UNCONDITIONAL EVOLUTION")
-
-# passing alpha/kappa and eta from command line
-α_over_κ = parse(Float64, ARGS[1])
-η = parse(Float64, ARGS[2])
-
-"""# data and results storing directory
-if η == 0.4 && α_over_κ == 1.0
-    directory = "figure1/"
-elseif η == 1.0 && α_over_κ == 0.4
-    directory = "figure2/"
-else
-    directory = "./"
-end"""
-
 for line in eachline(inputfile)
     parts = split(line) # using split() words separated by a space within the argument string become the elements of a list
     # it skips empty lines, controls that there are exactly two elements per line (otherwise it skips the line) and skip the comments
@@ -38,6 +23,10 @@ for line in eachline(inputfile)
     if key == "INSTATE"
     # 'global' indicates a global variable assignment
         global instate = value 
+    elseif key == "ALPHA"
+        global α_over_κ = parse(Float64, value)
+    elseif key == "ETA"
+        global η = parse(Float64, value)
     elseif key == "FINALT"
         global t_f = parse(Float64, value)
     elseif key == "dt"
@@ -72,10 +61,21 @@ println("Ergotropy and capacity computation...")
 erg_results = []
 # list to fill with capacity values
 cap_results = []
+# list to fill with energy values
+en_results = []
+# list to fill with power values
+pw_results = [0.0]
+# list to fill with ergotropic power values
+erg_pw_results = [0.0]
 
-for i in 0:NUMBER_OF_TIMEINTERVALS
-    push!(erg_results, ergotropy(states[i + 1]))
-    push!(cap_results, capacity(states[i + 1]))
+for (i, t) in enumerate(tlist)
+    erg = ergotropy(states[i])
+    en = energy(states[i])
+    push!(erg_results, erg)
+    push!(cap_results, capacity(states[i]))
+    push!(en_results, en)
+    i != 1 ? push!(pw_results, en / t) : continue
+    i != 1 ? push!(erg_pw_results, erg / t) : continue 
 end
 
 # saving on a file the results
@@ -89,5 +89,20 @@ end
 open("results/cap_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
     for (t, cap) in zip(tlist, cap_results)
         @printf(io, "%.3f\t%.8f\n", t, cap)
+    end
+end
+open("results/en_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+    for (t, en) in zip(tlist, en_results)
+        @printf(io, "%.3f\t%.8f\n", t, en)
+    end
+end
+open("results/pw_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+    for (t, pw) in zip(tlist, pw_results)
+        @printf(io, "%.3f\t%.8f\n", t, pw)
+    end
+end
+open("results/erg_pw_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+    for (t, erg_pw) in zip(tlist, erg_pw_results)
+        @printf(io, "%.3f\t%.8f\n", t, erg_pw)
     end
 end

@@ -1,21 +1,24 @@
 # initial state {p (pure), m (maximally mixed)}
-INSTATE     p
+INSTATE         m
 # alpha over kappa value
-ALPHA       1.0
+ALPHA           0.4
 # eta value
-ETA         0.4
+ETA             1.0
 # evolution final time
-FINALT      10
+FINALT          10
 # time subintervals width
-dt          0.001
+dt              0.001
 # number of trajectories
-NTRAJ       1000
+NTRAJ           1000
 # chunk dimension for parallel computing
-CHUNKDIM    100
+CHUNKDIM        100
 # === FOR STEADY STATES EVOLUTION ===
 # finale alpha over kappa value
-FINALALPHA  2
+FINALALPHA      2
 # alpha over kappa points number
-ALPHAPOINTS 50
+ALPHAPOINTS     50
 # === HISTOGRAM'S SNAPSHOT ===
-HISTOTIME   2.5 5.0 7.5
+HISTOTIME       2.5 5.0 7.5
+# === ENERGY'S THRESHOLDS FOR AVERAGE POWER EVOLUTION ===
+NTHRESHOLDS     100
+MAXTHRESHOLD    0.3

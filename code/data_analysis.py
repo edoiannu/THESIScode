@@ -64,9 +64,11 @@ def plot_mean_erg():
         data = np.loadtxt(resultsdir + "erg_" + unr[j] + "_" + process + ".dat", delimiter = "\t")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
+    # unconditional energy
     data = np.loadtxt(resultsdir + "en_unc_" + instate + "_alpha" + str(alpha_over_kappa) + ".dat")
     ax.plot(data[:,0], data[:,1], color = "gray", label = r"$E_{unc}(t)$")
 
+    # unconditional ergotropy
     data = np.loadtxt(resultsdir + "erg_unc_" + instate + "_alpha" + str(alpha_over_kappa) + ".dat")
     ax.plot(data[:,0], data[:,1], color = "black", label = r"$\epsilon_{unc}(t)$")
 
@@ -77,7 +79,7 @@ def plot_mean_erg():
     ax.legend(loc = "upper right" if (instate == "p" and alpha_over_kappa == 1.0 and eta == 0.4) else "lower right", ncol = 2)
 
     fig.suptitle(
-            f"Mean values (erg): initial pure state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+            f"Mean values (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
         )
 
     plt.tight_layout()
@@ -102,7 +104,7 @@ def plot_mean_cap():
     ax.legend(loc = "upper right" if (instate == "p" and alpha_over_kappa == 1.0 and eta == 0.4) else "center right", ncol = 2)
 
     fig.suptitle(
-            f"Mean values (cap): initial pure state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+            f"Mean values (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
         )
 
     plt.tight_layout()
@@ -127,7 +129,7 @@ def plot_var_erg():
     ax.legend(loc = "upper right" if (instate == "p" and eta == 0.4 and alpha_over_kappa == 1.0) else "upper left", ncol = 2)
 
     fig.suptitle(
-            f"Variance (erg): initial pure state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+            f"Variance (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
         )
 
     plt.tight_layout()
@@ -150,7 +152,7 @@ def plot_var_cap():
     ax.legend(loc = "upper right", ncol = 2)
 
     fig.suptitle(
-            f"Variance (cap): initial pure state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+            f"Variance (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
         )
 
     plt.tight_layout()
@@ -238,7 +240,7 @@ def plot_skw_erg():
     ax.legend(loc = "upper right" if (instate == "p" and eta == 0.4 and alpha_over_kappa == 1.0) else "upper left", ncol = 2)
 
     fig.suptitle(
-            f"Skewness (erg): initial pure state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+            f"Skewness (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
         )
 
     plt.tight_layout()
@@ -261,7 +263,7 @@ def plot_skw_cap():
     ax.legend(loc = "upper right", ncol = 2)
 
     fig.suptitle(
-            f"Skewness (cap): initial pure state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+            f"Skewness (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
         )
 
     plt.tight_layout()
@@ -438,6 +440,54 @@ def plot_ss_cap():
     plt.savefig(plotsdir + "ss_cap.png", dpi = 300)
     plt.close(fig)
 
+def plot_power_ev():
+    """Plot the average power evolution for different unravelling against time and the energy thresholds"""
+    fig, ax = plt.subplots(figsize = (6, 5))
+    for j in range(len(unr)):
+        data = np.loadtxt(resultsdir + "avepower_" + unr[j] + "_" + process + "_against_time.dat", delimiter = "\t")
+        ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{P}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
+
+    # unconditional power
+    data = np.loadtxt(resultsdir + "pw_unc_" + instate + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+    ax.plot(data[:,0], data[:,1], color = "gray", label = r"$P_{unc}(t)$")
+
+    # unconditional ergotropic energy
+    data = np.loadtxt(resultsdir + "erg_pw_unc_" + instate + "_alpha" + str(alpha_over_kappa) + ".dat", delimiter = "\t")
+    ax.plot(data[:,0], data[:,1], color = "black", label = r"$\mathcal{P}_{unc}(t)$")
+
+    ax.set_xlabel(r"$\kappa t$")
+    ax.set_ylabel(r"$\bar{\mathcal{P}}_{unr, \eta} (t) / \omega_0$")
+    ax.grid(True, linestyle = ":", alpha = 0.6)
+    ax.legend(loc = "upper right")
+    ax.set_yscale("log") if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
+
+    fig.suptitle(
+        f"Average powers as function of time: initial " + instate + f" state, " r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and {NUMBER_OF_TRAJECTORIES : .1e} trajectories"
+        )
+    
+    plt.tight_layout()
+    plt.savefig(plotsdir + "avepower_" + process + "_against_time.png", dpi = 300)
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize = (6, 5))
+    for j in range(len(unr)):
+        data = np.loadtxt(resultsdir + "avepower_" + unr[j] + "_" + process + "_against_energy_threshold.dat", delimiter = "\t")
+        ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{P}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
+
+    ax.set_xlabel(r"$\epsilon_{threshold}$")
+    ax.set_ylabel(r"$\bar{\mathcal{P}}_{unr, \eta} (t) / \omega_0$")
+    ax.grid(True, linestyle = ":", alpha = 0.6)
+    ax.legend(loc = "lower right")
+    ax.set_yscale("log") if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
+
+    fig.suptitle(
+        f"Average powers as function of energy thresholds: initial " + instate + f" state,\n" r"$\alpha / \kappa$" f" = {alpha_over_kappa}," f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and {NUMBER_OF_TRAJECTORIES : .1e} trajectories"
+        )
+    
+    plt.tight_layout()
+    plt.savefig(plotsdir + "avepower_" + process + "_against_energy_threshold.png", dpi = 300)
+    plt.close(fig)
+
 # ============================== MAIN ==============================
 
 if __name__ == "__main__":
@@ -454,3 +504,4 @@ if __name__ == "__main__":
     plot_histograms()
     plot_ss_erg()
     plot_ss_cap()
+    plot_power_ev()
