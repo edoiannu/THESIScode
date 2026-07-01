@@ -9,7 +9,7 @@ FINALT          10
 # time subintervals width
 dt              0.001
 # number of trajectories
-NTRAJ           1000
+NTRAJ           40000
 # chunk dimension for parallel computing
 CHUNKDIM        100
 # === FOR STEADY STATES EVOLUTION ===

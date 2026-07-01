@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=sme_solve
+#SBATCH --job-name=hod90_m_eta1.0_alpha0.4
 #SBATCH --output=slurm_output/results_%j.log
 #SBATCH --error=slurm_output/errors_%j.log
-#SBATCH --ntasks=12
+#SBATCH --ntasks=10
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30G
 
-julia --project=. -p $SLURM_NTASKS photodet.jl
+julia --project=. -p $SLURM_NTASKS dyne.jl hod 90
