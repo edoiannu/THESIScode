@@ -1,32 +1,53 @@
-# === SYSTEM UNCONDITIONAL EVOLUTION ===
+# =============================================================================
+# === UNCONDITIONAL EVOLUTION OF THE SYSTEM ===================================
+# === ERGOTROPY, CAPACITY, ENERGY AND POWERS COMPUTATION ======================
+# === FROM STATE DYNAMICAL EVOLUTION ==========================================
+# =============================================================================
+#
+# Structure of the file:
+#   1. Parameters reading from the input file
+#   2. Checks on the input parameters and initial state definition
+#   3. Time grid definition
+#   4. Unconditional evolution and computation of the quantities
+#   5. Results printing on files
+#
+# The unconditional dynamics does not depend on the detection efficiency η nor
+# on the number of trajectories, so all its parameters are read from input.dat
+# and its results are written directly in 'results/'.
+#
+# =============================================================================
 
 # including required libraries
 include("my_library/my_objects.jl")
 using Printf    # to write on formatted files
 
+# =============================================================================
+# 1. PARAMETERS READING
+# =============================================================================
+
 # variables initialization
-inputfile = "input.dat"     # input file
+instate = nothing           # single character variable describing the evolution initial state {p (pure), m (maximally mixed)}
+ρ_0 = nothing               # density matrix initial state
+α_over_κ = nothing          # driving field intensity over the system emission rate
 t_f = nothing               # evolution final time
 dt = nothing                # time step
-instate = nothing           # single character variable describing the evolution initial state {p (pure), m (maximally mixed)}
-ρ_0 = nothing                # density matrix initial state
-α_over_κ = nothing          # driving field intensity over the system emission rate
-η = nothing                 # detection efficiency
 
-for line in eachline(inputfile)
-    parts = split(line) # using split() words separated by a space within the argument string become the elements of a list
-    # it skips empty lines, controls that there are exactly two elements per line (otherwise it skips the line) and skip the comments
-    if isempty(line) || length(parts) != 2 || startswith(line, "#")
+# reading system's parameters from the input.dat
+for line in eachline("input.dat")
+    # to split line's elements
+    parts = split(line)
+    nparts = length(parts)
+    # conditions to skip a line
+    if isempty(line) || startswith(line, "#")
         continue
     end
-    key, value = parts
+    key = parts[1]
+    value = parts[2]
     if key == "INSTATE"
-    # 'global' indicates a global variable assignment
-        global instate = value 
+        # 'global' indicates a global variable assignment
+        global instate = value
     elseif key == "ALPHA"
         global α_over_κ = parse(Float64, value)
-    elseif key == "ETA"
-        global η = parse(Float64, value)
     elseif key == "FINALT"
         global t_f = parse(Float64, value)
     elseif key == "dt"
@@ -34,26 +55,42 @@ for line in eachline(inputfile)
     end
 end
 
+# =============================================================================
+# 2. CHECKS ON THE INPUT PARAMETERS AND INITIAL STATE
+# =============================================================================
+
 # initial state as density matrix (complex in general)
 if instate == "p"
-    global ρ_0 = ComplexF64[0.00000000 0.00000000 ; 0.00000000 1.00000000]      # ground state
+    global ρ_0 = ComplexF64[0.00000000 0.00000000 ; 0.00000000 1.00000000]  # ground state
     # for the exited state
     # ρ_0 = [1 0 ; 0 0]
 elseif instate == "m"
     global ρ_0 = ComplexF64[0.50000000 0.00000000 ; 0.00000000 0.50000000]  # maximally mixed state (one half the identity matrix)
 else
-    println("The initial state must be pure (p) or maximally mixed (m).")
+    error("The initial state must be pure (p) or maximally mixed (m).")
 end
+
+# =============================================================================
+# 3. TIME GRID AND OUTPUT FOLDER
+# =============================================================================
 
 NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)           # number of time intervals
 tlist = range(0, t_f, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
 
-println("System evolution (initial ", instate, " state, α/κ = ", α_over_κ, ", η = ", η, " and ", NUMBER_OF_TIMEINTERVALS, " time intervals)...")
+# string that identifies the initial state and the driving field intensity
+inputstring = instate * "_alpha" * string(α_over_κ)
+# path where to save the results
+processpath = "results/"
+mkpath(processpath)
+
+# =============================================================================
+# 4. UNCONDITIONAL EVOLUTION AND COMPUTATION OF THE QUANTITIES
+# =============================================================================
+
+println("System evolution (initial ", instate, " state, α/κ = ", α_over_κ, " and ", NUMBER_OF_TIMEINTERVALS, " time intervals)...")
 
 # unconditional dynamics of the system
 states = uncond_evo(HS(α_over_κ), ρ_0, tlist, σ_m)
-
-# === Ergotropy and capacity computation ===
 
 println("Ergotropy and capacity computation...")
 
@@ -68,6 +105,7 @@ pw_results = [0.0]
 # list to fill with ergotropic power values
 erg_pw_results = [0.0]
 
+# cycle over the time intervals
 for (i, t) in enumerate(tlist)
     erg = ergotropy(states[i])
     en = energy(states[i])
@@ -75,33 +113,40 @@ for (i, t) in enumerate(tlist)
     push!(cap_results, capacity(states[i]))
     push!(en_results, en)
     i != 1 ? push!(pw_results, en / t) : continue
-    i != 1 ? push!(erg_pw_results, erg / t) : continue 
+    i != 1 ? push!(erg_pw_results, erg / t) : continue
 end
+
+# =============================================================================
+# 5. RESULTS PRINTING
+# =============================================================================
 
 # saving on a file the results
 println("Printing results...")
 
-open("results/erg_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+# --- ergotropy and capacity --------------------------------------------------
+open(processpath * "erg_unc_" * inputstring * ".dat", "w") do io
     for (t, erg) in zip(tlist, erg_results)
         @printf(io, "%.3f\t%.8f\n", t, erg)
     end
 end
-open("results/cap_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+open(processpath * "cap_unc_" * inputstring * ".dat", "w") do io
     for (t, cap) in zip(tlist, cap_results)
         @printf(io, "%.3f\t%.8f\n", t, cap)
     end
 end
-open("results/en_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+# --- energy ------------------------------------------------------------------
+open(processpath * "en_unc_" * inputstring * ".dat", "w") do io
     for (t, en) in zip(tlist, en_results)
         @printf(io, "%.3f\t%.8f\n", t, en)
     end
 end
-open("results/pw_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+# --- powers ------------------------------------------------------------------
+open(processpath * "pw_unc_" * inputstring * ".dat", "w") do io
     for (t, pw) in zip(tlist, pw_results)
         @printf(io, "%.3f\t%.8f\n", t, pw)
     end
 end
-open("results/erg_pw_unc_" * instate * "_alpha" * string(α_over_κ) * ".dat", "w") do io
+open(processpath * "erg_pw_unc_" * inputstring * ".dat", "w") do io
     for (t, erg_pw) in zip(tlist, erg_pw_results)
         @printf(io, "%.3f\t%.8f\n", t, erg_pw)
     end

@@ -1,9 +1,32 @@
-# === STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINIUOUS PHOTO-DETECTION ===
+# =============================================================================
+# === STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT ===================
+# === TO A CONTINUOUS PHOTO-DETECTION =========================================
+# =============================================================================
+#
+# Structure of the file:
+#   1. Parameters reading from the input file
+#   2. Checks on the input parameters and initial state definition
+#   3. Process name definition
+#   4. Workers initialization
+#   5. Simulation over the α/κ values
+#   6. Results printing on files
+#
+# For each α/κ value the trajectories are evolved up to the final time and only
+# their last state is kept: the steady state daemonic ergotropy and capacity are
+# then averaged over all the trajectories.
+#
+# =============================================================================
 
 # import required libraries and objects
 using Printf        # to write on formatted files
 using Distributed   # for parallel computing
 using JLD2          # to print trajectories on a file
+
+println("=== STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===")
+
+# =============================================================================
+# 1. PARAMETERS READING
+# =============================================================================
 
 # variables initialization
 inputfile = "input.dat"             # name of the file from which we read the simulation's parameters
@@ -17,9 +40,6 @@ deltat = nothing                    # simulation's time step
 NUMBER_OF_ALPHAPOINTS = nothing     # number of α/κ points
 NUMBER_OF_TRAJECTORIES = nothing    # simulation's number of trajectories
 chunk_dim = nothing                 # number of trajectories to evolve simultaneously
-
-
-println("=== STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===")
 
 # reading from file simulation the remaining parameters
 for line in eachline(inputfile)
@@ -49,6 +69,10 @@ for line in eachline(inputfile)
     end
 end
 
+# =============================================================================
+# 2. CHECKS ON THE INPUT PARAMETERS AND INITIAL STATE
+# =============================================================================
+
 # initial state as density matrix (complex in general)
 if instate == "p"
     global ρ_0 = ComplexF64[0.00000000 0.00000000 ; 0.00000000 1.00000000] # ground state
@@ -65,8 +89,19 @@ if η_val < 0 || η_val > 1
     error("The detection efficiency must be between 0 and 1.")
 end
 
+# =============================================================================
+# 3. PROCESS NAME
+# =============================================================================
+
 # process name generation
 process = "pd_eta" * string(η_val)  # process name
+# the steady states mix several α/κ values, so they do not belong to a single
+# process folder: they are written in the results' root
+mkpath("results/")
+
+# =============================================================================
+# 4. WORKERS INITIALIZATION
+# =============================================================================
 
 # workers initialization
 @everywhere begin
@@ -83,7 +118,8 @@ process = "pd_eta" * string(η_val)  # process name
     NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)           # number of time intervals
     tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
 
-    # pevolution function definition
+    # pevolution function definition: it evolves a single trajectory and returns
+    # only its final (steady) state
     function pevolution(α_over_κ)
         ρ_t = ρ0   # initial state at time t=0
         ρ_tdt = nothing
@@ -94,6 +130,10 @@ process = "pd_eta" * string(η_val)  # process name
         return ρ_tdt
     end
 end
+
+# =============================================================================
+# 5. SIMULATION
+# =============================================================================
 
 println("Steady states evolutions (η = ", η, ", ", NUMBER_OF_ALPHAPOINTS, " α/κ points, ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " trajectories)...")
 
@@ -114,11 +154,14 @@ traj_per_worker = div(chunk_dim , nworkers())
 # division remainder (it is possible that the number of trajectory per chunk is not a multiple of the number of workers)
 rem = chunk_dim % nworkers()
 
+# cycle over the α/κ values
 for α in αlist
     global αind += 1
     chunk_start_time = time()   # we start counting the execution time of the chunk
     prog_ss_erg_sum = 0         # progressive steady states daemonic ergotropy sum
     prog_ss_cap_sum = 0         # progressive steady states daemonic capacity sum
+
+    # cycle over the chunks of trajectories
     for i in 1:chunk_num
         # global chunk_ind += 1
         # lists to fill with the chunk's steady states of each trajectory
@@ -169,8 +212,11 @@ for α in αlist
         end
     end
 
+    # the average over the chunks is the steady state value for this α/κ
     push!(ss_ergotropies, prog_ss_erg_sum / chunk_num)
     push!(ss_capacities, prog_ss_cap_sum / chunk_num)
+
+    # run time of this α/κ value and progress printing
     chunk_end_time = time()     # we end counting the execution time of the chunk
     global prog_time += chunk_end_time - chunk_start_time
     println("α/κ = ", round(α, digits = 5), ", ", round(αind / NUMBER_OF_ALPHAPOINTS * 100, digits = 1), "%. Run time: ", round(prog_time, digits = 2), "s.")
@@ -179,13 +225,20 @@ end
 end_time = time()
 println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 
+# =============================================================================
+# 6. RESULTS PRINTING
+# =============================================================================
+
 # we print the results on a file
 println("Printing results...")
+
+# --- steady state daemonic ergotropy -----------------------------------------
 open("results/ss_erg_" * process * ".dat", "w") do io
     for (t, erg) in zip(αlist, ss_ergotropies)
         @printf(io, "%.3f\t%.8f\n", t, erg)
     end
 end
+# --- steady state daemonic capacity ------------------------------------------
 open("results/ss_cap_" * process * ".dat", "w") do io
     for (t, cap) in zip(αlist, ss_capacities)
         @printf(io, "%.3f\t%.8f\n", t, cap)

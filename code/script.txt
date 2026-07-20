@@ -1,4 +1,4 @@
-julia -p 12 power.jl pd
-julia -p 12 power.jl hod 0
-julia -p 12 power.jl hod 90
-julia -p 12 power.jl hed
+julia -p 12 photodet_.jl
+julia -p 12 dyne_.jl hod 0
+julia -p 12 dyne_.jl hod 90
+julia -p 12 dyne_.jl hed

@@ -1,0 +1,378 @@
+# Daemonic ergotropy and capacity in continuously monitored open quantum systems
+
+Numerical simulation of a driven two-level system coupled to a zero-temperature
+bath, evolved both unconditionally and along the quantum trajectories generated
+by a continuous measurement of the emitted field. For each unravelling the code
+computes the **daemonic ergotropy**, the **daemonic capacity**, their variance
+and skewness, the **ergotropic power** and the corresponding **steady states**.
+
+The simulation code is written in Julia (parallelised over trajectories with
+`Distributed`); the figures are produced by a Python script.
+
+---
+
+## Table of contents
+
+- [Physical setting](#physical-setting)
+- [Repository layout](#repository-layout)
+- [Requirements](#requirements)
+- [Quick start](#quick-start)
+- [The input file](#the-input-file)
+- [Organisation of the results](#organisation-of-the-results)
+- [`params.dat`: reproducibility of the plots](#paramsdat-reproducibility-of-the-plots)
+- [The scripts, one by one](#the-scripts-one-by-one)
+- [Plotting](#plotting)
+- [Typical workflow](#typical-workflow)
+- [Notes and known limitations](#notes-and-known-limitations)
+
+---
+
+## Physical setting
+
+A two-level system of frequency `ω₀` is resonantly driven with amplitude `α` and
+emits into the environment at rate `κ`. The dynamics is governed by a Lindblad
+master equation with collapse operator `σ₋`, integrated with a Kraus map over a
+time step `dt`.
+
+When the emitted field is continuously monitored with efficiency `η`, the state
+of the system is *conditioned* on the measurement record and follows a stochastic
+trajectory. Averaging a state functional over the trajectory ensemble gives its
+**daemonic** version: the value an observer with access to the measurement record
+could extract, as opposed to the unconditional (blind) observer.
+
+Three unravellings are implemented:
+
+| Label | Unravelling | Measured quantity |
+|-------|-------------|-------------------|
+| `pd` | photo-detection | photon counts |
+| `hod<φ>` | homodyne detection at angle `φ` (degrees) | a field quadrature |
+| `hed` | heterodyne detection | both quadratures |
+
+The unconditional evolution (`unc`) provides the reference curves: the mean
+energy `E_unc(t)` and the ergotropy `ε_unc(t)` of the unmonitored system.
+
+---
+
+## Repository layout
+
+```
+.
+├── input.dat               # simulation parameters
+├── my_library/
+│   └── my_objects.jl       # operators, Kraus maps, ergotropy, capacity, ...
+│
+├── photodet_.jl            # conditional dynamics, photo-detection
+├── dyne_.jl                # conditional dynamics, homodyne / heterodyne
+├── uncond.jl               # unconditional dynamics
+├── power.jl                # average ergotropic power (any unravelling)
+├── ss_photodet.jl          # steady states vs α/κ, photo-detection
+├── ss_dyne.jl              # steady states vs α/κ, homodyne / heterodyne
+│
+├── data_analysis.py        # plot generation
+│
+├── results/                # simulation output (created automatically)
+└── plots/                  # figures (created automatically)
+```
+
+---
+
+## Requirements
+
+**Julia** ≥ 1.9. Packages: `Distributed`, `Printf` (standard library) and `JLD2`.
+
+```julia
+using Pkg; Pkg.add("JLD2")
+```
+
+**Python** ≥ 3.8 with `numpy` and `matplotlib`.
+
+```bash
+pip install numpy matplotlib
+```
+
+---
+
+## Quick start
+
+```bash
+# 1. edit the parameters
+$EDITOR input.dat
+
+# 2. conditional dynamics, one run per unravelling (-p = number of workers)
+julia -p 8 photodet_.jl
+julia -p 8 dyne_.jl hod 0
+julia -p 8 dyne_.jl hod 90
+julia -p 8 dyne_.jl hed
+
+# 3. unconditional reference curves
+julia uncond.jl
+
+# 4. figures
+python data_analysis.py
+```
+
+---
+
+## The input file
+
+`input.dat` is a plain text file with one `KEY<tab>VALUE` pair per line. Empty
+lines and lines starting with `#` are ignored. Every script reads it with the
+same scheme, and each script only picks the keys it needs.
+
+| Key | Type | Meaning | Used by |
+|-----|------|---------|---------|
+| `INSTATE` | `p` / `m` | initial state: ground (`p`) or maximally mixed (`m`) | all |
+| `ALPHA` | float | driving field intensity over emission rate, `α/κ` | all but the steady states |
+| `ETA` | float in [0,1] | detection efficiency | all conditional scripts |
+| `FINALT` | float | final time, in units of `1/κ` | all |
+| `dt` | float | time step | all |
+| `NTRAJ` | int | number of trajectories | all conditional scripts |
+| `CHUNKDIM` | int | trajectories evolved simultaneously (must divide `NTRAJ`) | all conditional scripts |
+| `HISTOTIME` | list of floats | times at which the single-trajectory histograms are recorded | `photodet_.jl`, `dyne_.jl` |
+| `NTHRESHOLDS` | int | number of energy thresholds | `power.jl` |
+| `MAXTHRESHOLD` | float | largest energy threshold | `power.jl` |
+| `FINALALPHA` | float | largest `α/κ` of the steady state scan | `ss_*.jl` |
+| `ALPHAPOINTS` | int | number of `α/κ` points of the scan | `ss_*.jl` |
+
+Example:
+
+```
+# --- system -------------------------------------------
+INSTATE		p
+ALPHA		1.0
+ETA		0.4
+# --- time grid ----------------------------------------
+FINALT		10.0
+dt		0.001
+# --- trajectories -------------------------------------
+NTRAJ		10000
+CHUNKDIM	1000
+HISTOTIME	0.5 1.0 5.0
+# --- ergotropic power ---------------------------------
+NTHRESHOLDS	50
+MAXTHRESHOLD	0.5
+# --- steady states ------------------------------------
+FINALALPHA	5.0
+ALPHAPOINTS	50
+```
+
+`NTRAJ` must be an integer multiple of `CHUNKDIM`: the trajectories are evolved
+in chunks of `CHUNKDIM`, and each chunk is split among the available workers.
+Memory usage scales with `CHUNKDIM`, not with `NTRAJ`, so a large number of
+trajectories can be run with a modest chunk size.
+
+---
+
+## Organisation of the results
+
+Every *process* — that is, every triple (initial state, `α/κ`, `η`) — has its own
+folder, so that the results of different runs never overwrite each other:
+
+```
+results/
+├── params.dat is per-folder, see below
+│
+├── p_eta0.4_alpha1.0/            <- one process
+│   ├── params.dat                run size of this folder
+│   ├── erg_pd_p_eta0.4_alpha1.0.dat
+│   ├── cap_pd_p_eta0.4_alpha1.0.dat
+│   ├── var_erg_pd_...dat         variance
+│   ├── skw_erg_pd_...dat         third central moment
+│   ├── histo_erg_pd_..._t1.0.dat single-trajectory distributions
+│   ├── avepower_pd_..._against_time.dat
+│   ├── ... the same for hod0, hod90, hed ...
+│
+├── p_eta1.0_alpha1.0/            <- another η, another folder
+│
+├── erg_unc_p_alpha1.0.dat        unconditional: no η, so it lives in the root
+├── en_unc_p_alpha1.0.dat
+├── cap_unc_p_alpha1.0.dat
+├── pw_unc_p_alpha1.0.dat
+├── erg_pw_unc_p_alpha1.0.dat
+│
+├── ss_erg_pd_eta0.4.dat          steady states: several α/κ, so in the root too
+└── ss_cap_hod0_eta0.4.dat
+```
+
+The rule is simple: **a file lives in a process folder if and only if it is
+specific to a single (state, α, η)**. The unconditional dynamics does not depend
+on `η`, and the steady state scans span many `α/κ`, so both stay in `results/`.
+
+All data files are two-column, tab separated: first column the abscissa (time,
+energy threshold or `α/κ`), second column the value. Histogram files have a
+single column, one value per trajectory.
+
+The figures follow the same convention:
+
+```
+plots/
+├── p_eta0.4_alpha1.0/    figures of a single process
+└── ss_erg.png            figures which mix several processes
+```
+
+---
+
+## `params.dat`: reproducibility of the plots
+
+Each process folder contains a `params.dat` written by the simulation scripts:
+
+```
+# SIMULATION PARAMETERS USED TO PRODUCE THE DATA IN THIS FOLDER
+NTRAJ	10000
+FINALT	10.0
+dt	0.001
+```
+
+It exists to solve one specific problem. The plots annotate the number of
+trajectories and the size of the time grid in their titles; if those numbers were
+read from `input.dat`, editing `input.dat` for a new run would silently relabel
+every figure made from the old data.
+
+Hence the rule adopted throughout the code:
+
+- **the folder does not exist yet** → the run size is taken from `input.dat` and
+  written into `params.dat`;
+- **the folder already exists** → the run size is taken from `params.dat`, and
+  the values in `input.dat` are ignored;
+- the plotting script *always* reads `NTRAJ`, `FINALT` and `dt` from
+  `params.dat`, never from `input.dat`.
+
+The practical consequence is that all the unravellings of a given process share
+the same run size by construction, which is what makes the comparison plots
+meaningful. To simulate the same process with a different number of trajectories
+or a different time grid, **delete or rename the process folder** and run all its
+unravellings again.
+
+---
+
+## The scripts, one by one
+
+All the Julia scripts share the same layout, in numbered sections:
+parameters reading → checks → output folder → workers initialisation →
+simulation → post-processing → printing.
+
+### `photodet_.jl` — conditional dynamics, photo-detection
+
+```bash
+julia -p <nprocs> photodet_.jl
+```
+
+Evolves `NTRAJ` trajectories, accumulating the first three raw moments of
+ergotropy and capacity at every time step, plus the single-trajectory values at
+the times listed in `HISTOTIME`. Outputs mean, variance and skewness, and the
+histogram files.
+
+### `dyne_.jl` — conditional dynamics, homodyne and heterodyne
+
+```bash
+julia -p <nprocs> dyne_.jl hod 0     # homodyne, φ = 0°
+julia -p <nprocs> dyne_.jl hod 90    # homodyne, φ = 90°
+julia -p <nprocs> dyne_.jl hed       # heterodyne
+```
+
+Same structure as above; the unravelling is selected from the command line and
+enters through the collapse operator `(cos φ + i sin φ) σ₋` and the heterodyne
+flag.
+
+### `uncond.jl` — unconditional dynamics
+
+```bash
+julia uncond.jl
+```
+
+Deterministic, hence serial and fast. Produces energy, ergotropy, capacity, power
+and ergotropic power of the unmonitored evolution. Independent of `ETA` and
+`NTRAJ`.
+
+### `power.jl` — average ergotropic power
+
+```bash
+julia -p <nprocs> power.jl pd
+julia -p <nprocs> power.jl hod 0
+julia -p <nprocs> power.jl hed
+```
+
+Computes the average power `ε(t)/t` in two ways: as a function of time, and as a
+function of the energy threshold — for each trajectory, the power at the instant
+at which the ergotropy first crosses each threshold.
+
+### `ss_photodet.jl`, `ss_dyne.jl` — steady states
+
+```bash
+julia -p <nprocs> ss_photodet.jl
+julia -p <nprocs> ss_dyne.jl hod 0
+julia -p <nprocs> ss_dyne.jl hed
+```
+
+Scan `ALPHAPOINTS` values of `α/κ` up to `FINALALPHA`. For each of them the
+trajectories are evolved up to `FINALT` and only the final state is kept, so the
+output is the steady state daemonic ergotropy and capacity as functions of the
+drive.
+
+---
+
+## Plotting
+
+```bash
+python data_analysis.py
+```
+
+The script reads `INSTATE`, `ALPHA`, `ETA` and `HISTOTIME` from `input.dat` to
+know *which* process to plot, and `NTRAJ`, `FINALT`, `dt` from that process'
+`params.dat` to know *what the data are*. All four unravellings are overlaid on
+the same axes, with the unconditional curves in grey and black where relevant.
+
+Available functions:
+
+| Function | Figure |
+|----------|--------|
+| `plot_mean_erg`, `plot_mean_cap` | mean daemonic ergotropy / capacity vs time, with the unconditional references |
+| `plot_var_erg`, `plot_var_cap` | variances |
+| `plot_norm_var_erg`, `plot_norm_var_cap` | variances normalised by the squared mean |
+| `plot_skw_erg`, `plot_skw_cap` | third central moments |
+| `plot_norm_skw_erg`, `plot_norm_skw_cap` | skewnesses normalised by `σ³` |
+| `plot_histograms` | single-trajectory distributions at the `HISTOTIME` instants |
+| `plot_ss_erg`, `plot_ss_cap` | steady states vs `α/κ`, for several `η` |
+| `plot_power_ev` | average power vs time and vs energy threshold |
+
+Select the ones to run in the `__main__` block at the end of the file.
+
+---
+
+## Typical workflow
+
+Comparing the unravellings for one physical situation:
+
+1. set `INSTATE`, `ALPHA`, `ETA`, `FINALT`, `dt`, `NTRAJ`, `CHUNKDIM` in `input.dat`;
+2. run `photodet_.jl` — this creates `results/<process>/` and fixes the run size
+   in `params.dat`;
+3. run `dyne_.jl` for `hod 0`, `hod 90` and `hed`: they inherit the same run size
+   automatically;
+4. run `uncond.jl` for the reference curves;
+5. run `power.jl` for each unravelling, if the power figures are needed;
+6. run `data_analysis.py`.
+
+To scan the detection efficiency, change `ETA` and repeat: a new folder is
+created and the previous results stay untouched. Same for `ALPHA` and `INSTATE`.
+
+The steady state scripts are independent of this workflow, since they sweep `α/κ`
+themselves and write into `results/`.
+
+---
+
+## Notes and known limitations
+
+- **Run time** scales as `NTRAJ × FINALT/dt`; the trajectories are embarrassingly
+  parallel, so use `-p` with as many workers as physical cores.
+- **The output file names** contain the process string, so different unravellings
+  never collide inside a folder. When adding a new script, follow the same
+  convention: `<quantity>_<unravelling>_<instate>_eta<η>_alpha<α>.dat`.
+- **Changing `FINALT` or `dt` of an existing process** is not possible without
+  removing its folder, by design: mixing time grids inside one folder would make
+  the comparison plots inconsistent.
+- **`NTHRESHOLDS` and `MAXTHRESHOLD` are not recorded** in `params.dat`, since
+  they only concern `power.jl`; changing them between two runs of the same
+  process is not detected automatically.
+- The single-trajectory histograms are the only output whose size grows with
+  `NTRAJ` (one value per trajectory per instant in `HISTOTIME`): keep `HISTOTIME`
+  short when running millions of trajectories.

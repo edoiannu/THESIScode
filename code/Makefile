@@ -1,3 +1,0 @@
-
-cleanstates:
-	rm states/*
