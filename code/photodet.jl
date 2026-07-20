@@ -56,8 +56,15 @@ if η_val < 0 || η_val > 1
     error("The detection efficiency must be between 0 and 1.")
 end
 
-# process name generation
-process = "pd_" * instate * "_eta" * string(η_val) * "_alpha" * string(α_val)    # process name
+# string that identifies the input simulation's parameters
+inputstring = instate * "_eta" * string(η_val) * "_alpha" * string(α_val)
+# string that identifies process name
+process = "pd_" * inputstring
+# path where to save the states' trajectories
+processpath = "states/" * inputstring * "/"
+mkpath(processpath)
+# write on processpath the number of trajectories
+write(joinpath(processpath, "ntraj.dat"), string(NUMBER_OF_TRAJECTORIES), "\n")
 
 # workers initialization
 @everywhere begin
@@ -117,7 +124,7 @@ for i in 1:chunk_num
                 local_states = [pevolution(rho) for j in 1:n_per_worker]
                 
                 # each worker saves its local results on disk
-                filename = "states/$(process)_chunk$(c_id)_worker$(w_id).jld2"
+                filename = processpath * "$(process)_chunk$(c_id)_worker$(w_id).jld2"
                 @save filename local_states
             end
         end

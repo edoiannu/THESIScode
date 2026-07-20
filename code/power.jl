@@ -111,15 +111,15 @@ global Elimit = range(0.0, MAXthreshold, Nthresholds)
         const cops = c
     end
 
-    # power evolution function definition
+    # single trajectory power evolution function definition
     function power_evolution(ρ_0)
         Eidx = 1
         ρ_t = ρ_0   # initial state at time t=0
-        power_ev = Vector{Float64}(undef, NUMBER_OF_TIMEINTERVALS)  # power evolution with time
-        thr_powers  = zeros(Float64, $Nthresholds)                   # power evolution with thresholds (initialized with Nthreshold zeros)
-        thr_reached = falses($Nthresholds)                           # which threshold have been reached from this trajectory
-        thr_powers[1] = 0.0
-        thr_reached[1] = true
+        power_ev = Vector{Float64}(undef, NUMBER_OF_TIMEINTERVALS)      # power evolution with time
+        thr_powers  = zeros(Float64, $Nthresholds)                      # power evolution with thresholds (initialized with Nthreshold zeros)
+        thr_reached = falses($Nthresholds)                              # which threshold have been reached from this trajectory
+        thr_powers[Eidx] = 0.0
+        thr_reached[Eidx] = true
         for i in 1:NUMBER_OF_TIMEINTERVALS
             t = tlist[i]
             ρ_tdt = ($det_type == "pd" ? photodet_kraus(HS(α_over_κ), ρ_t, cops, η) : dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne))
@@ -128,28 +128,36 @@ global Elimit = range(0.0, MAXthreshold, Nthresholds)
             # updating power's evolution
             power_ev[i] = power
             # updating threshold powers
-            while Eidx < $Nthresholds && erg >= $Elimit[Eidx + 1]
-                Eidx += 1
-                thr_powers[Eidx] = power
-                thr_reached[Eidx] = true
+            for j in (Eidx+1):$Nthresholds
+                if erg >= $Elimit[j]
+                    thr_powers[j] = power
+                    thr_reached[j] = true
+                    Eidx = j
+                else
+                    break
+                end
             end
             ρ_t = ρ_tdt
         end
-        return power_ev, thr_powers, thr_reached
+        for i in 1:$Nthresholds
+            if !thr_reached[i]
+                thr_powers[i] = power_ev[end]
+            end
+        end
+        return power_ev, thr_powers
     end
 
-    # function that for each time interval accumulate the evolutions' power values for a given group or trajectories and count the number of trajectories that reach the threshold within this group
+    # function that for each time interval accumulate the evolutions' power values for a given group or trajectories
     function accumulate_power_evolution(results)
         Ntraj = length(results)
         sum_power_time = zeros(Float64, NUMBER_OF_TIMEINTERVALS)
         sum_power_thre = zeros(Float64, $Nthresholds)
-        count_thre     = zeros(Int64,   $Nthresholds)
+        # count_thre     = zeros(Int64,   $Nthresholds)
         for j in 1:Ntraj
             sum_power_time .+= results[j][1]
             sum_power_thre .+= results[j][2]
-            count_thre     .+= results[j][3]    # true → 1, false → 0
         end
-        return sum_power_time, sum_power_thre, count_thre
+        return sum_power_time, sum_power_thre
     end
 end
 
@@ -165,10 +173,9 @@ traj_per_worker = div(chunk_dim , nworkers())
 # division remainder (it is possible that the number of trajectory per chunk is not a multiple of the number of workers)
 rem = chunk_dim % nworkers()
 
-# vectors that, for each time interval or energy threshold, respectively compute the total progressive powers and the number of trajectories that reach that threshold
+# vectors that, for each time interval or energy threshold, respectively compute the total progressive powers
 sum_power_time_tot = zeros(Float64, NUMBER_OF_TIMEINTERVALS)
 sum_power_thre_tot = zeros(Float64, Nthresholds)
-count_thre_tot     = zeros(Int64,   Nthresholds)
 
 for i in 1:chunk_num
     chunk_start_time = time()
@@ -176,7 +183,7 @@ for i in 1:chunk_num
     # workers -> (accumulated power time evolution/accumulated power threshold evolution/number of trajectories that reach the threshold within a worker)
     chunk_powers_time = Vector{Any}(undef, nworkers())
     chunk_powers_thre = Vector{Any}(undef, nworkers())
-    chunk_counts_thre = Vector{Any}(undef, nworkers())
+    # chunk_counts_thre = Vector{Any}(undef, nworkers())
     # we prepare the groups of trajectories per worker
     # sync: wait for each worker to finish its task
     @sync begin
@@ -191,14 +198,12 @@ for i in 1:chunk_num
                 end
                 chunk_powers_time[w_idx] = worker_powers_sums[1]
                 chunk_powers_thre[w_idx] = worker_powers_sums[2]
-                chunk_counts_thre[w_idx] = worker_powers_sums[3]
             end
         end
     end
 
     global sum_power_time_tot .+= sum(chunk_powers_time)
     global sum_power_thre_tot .+= sum(chunk_powers_thre)
-    global count_thre_tot     .+= sum(chunk_counts_thre)
 
     chunk_end_time = time()
     global prog_time += chunk_end_time - chunk_start_time
@@ -206,7 +211,7 @@ for i in 1:chunk_num
 end
 
 av_power_ev_time = sum_power_time_tot ./ NUMBER_OF_TRAJECTORIES
-av_power_ev_thre = sum_power_thre_tot ./ count_thre_tot
+av_power_ev_thre = sum_power_thre_tot ./ NUMBER_OF_TRAJECTORIES
 
 end_time = time()
 println("Total run time: ", round(end_time - start_time, digits = 2), "s.")

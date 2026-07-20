@@ -491,6 +491,7 @@ def plot_power_ev():
 # ============================== MAIN ==============================
 
 if __name__ == "__main__":
+    """
     plot_mean_erg()
     plot_mean_cap()
     plot_var_erg()
@@ -504,4 +505,5 @@ if __name__ == "__main__":
     plot_histograms()
     plot_ss_erg()
     plot_ss_cap()
+    """
     plot_power_ev()

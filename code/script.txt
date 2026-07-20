@@ -2,5 +2,3 @@ julia -p 12 power.jl pd
 julia -p 12 power.jl hod 0
 julia -p 12 power.jl hod 90
 julia -p 12 power.jl hed
-julia uncond.jl
-python3 data_analysis.py

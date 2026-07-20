@@ -1,4 +1,4 @@
-# === DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATE DYNAMICS ===
+# === DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATE DYNAMICAL EVOLUTION ===
 
 using Printf            # to write on formatted files
 using Distributed       # for parallel computing
@@ -24,7 +24,7 @@ t_f = nothing                       # simulation's final time
 dt = nothing                        # simulation's time step
 NUMBER_OF_TRAJECTORIES = nothing    # simulation's number of trajectories
 chunk_dim = nothing                 # number of trajectories to analyse simultaneously
-target_times = nothing
+target_times = nothing              # times at which we want to compute the histograms of the single states' daemonic ergotropy and capacity
 
 # reading data analysis parameters from file
 for line in eachline(inputfile)
@@ -66,13 +66,14 @@ NUMBER_OF_TIMEINTERVALS = Int64(t_f / dt)           # number of time intervals
 tlist = range(0, t_f, NUMBER_OF_TIMEINTERVALS + 1)  # time grid: N+1 points from 0 to t_f
 
 # process name generation
-process = unravelling * "_" * instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)
+inputcode = instate * "_eta" * string(η) * "_alpha" * string(α_over_κ)
+process = unravelling * "_" * inputcode
 
 println("=== DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION FROM STATES DYNAMICS ===")
 println("Averaged quantities computation (unravelling: ", unravelling, ", initial ", instate, " state, α/κ = ", α_over_κ, ", η = ", η, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " trajectories)...")
 
 # target times and indices
-target_times = [2.5, 5.0, 7.5]
+# target_times = [2.5, 5.0, 7.5]
 target_indices = [findfirst(t -> abs(t - target) < 1e-9, tlist) for target in target_times]
 
 prog_erg_sum = nothing                                          # progressive daemonic ergotropy sum
@@ -167,32 +168,32 @@ println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 
 # printing results on files
 println("Printing results...")
-open("results/erg_" * process * ".dat", "w") do io
+open("results/" * inputcode * "/erg_pd.dat", "w") do io
     for (t, erg) in zip(tlist, erg_mean)
         @printf(io, "%.3f\t%.8f\n", t, erg)
     end
 end
-open("results/cap_" * process * ".dat", "w") do io
+open("results/" * inputcode * "/cap_pd.dat", "w") do io
     for (t, cap) in zip(tlist, cap_mean)
         @printf(io, "%.3f\t%.8f\n", t, cap)
     end
 end
-open("results/var_erg_" * process * ".dat", "w") do io
+open("results/" * inputcode * "/var_erg_pd.dat", "w") do io
     for (t, ergvar) in zip(tlist, erg_var)
         @printf(io, "%.3f\t%.8f\n", t, ergvar)
     end
 end
-open("results/var_cap_" * process * ".dat", "w") do io
+open("results/" * inputcode * "/var_cap_pd.dat", "w") do io
     for (t, capvar) in zip(tlist, cap_var)
         @printf(io, "%.3f\t%.8f\n", t, capvar)
     end
 end
-open("results/skw_erg_" * process * ".dat", "w") do io
+open("results/" * inputcode * "/skw_erg_pd.dat", "w") do io
     for (t, ergskw) in zip(tlist, erg_skw)
         @printf(io, "%.3f\t%.8f\n", t, ergskw)
     end
 end
-open("results/skw_cap_" * process * ".dat", "w") do io
+open("results/" * inputcode * "/skw_cap_pd.dat", "w") do io
     for (t, capskw) in zip(tlist, cap_skw)
         @printf(io, "%.3f\t%.8f\n", t, capskw)
     end
