@@ -57,20 +57,21 @@ energy `E_unc(t)` and the ergotropy `ε_unc(t)` of the unmonitored system.
 
 ```
 .
-├── input.dat               # simulation parameters
+├── input.dat               # simulation parameters for a new process
 ├── my_library/
-│   └── my_objects.jl       # operators, Kraus maps, ergotropy, capacity, ...
+│   └── my_objects.jl       # object definitions: operators, Kraus maps, (deamonic) ergotropy and capacity computation, ...
 │
-├── photodet_.jl            # conditional dynamics, photo-detection
-├── dyne_.jl                # conditional dynamics, homodyne / heterodyne
+├── photodet.jl             # conditional dynamics, photo-detection
+├── dyne.jl                 # conditional dynamics, homodyne / heterodyne
 ├── uncond.jl               # unconditional dynamics
 ├── power.jl                # average ergotropic power (any unravelling)
 ├── ss_photodet.jl          # steady states vs α/κ, photo-detection
 ├── ss_dyne.jl              # steady states vs α/κ, homodyne / heterodyne
-│
+│ 
 ├── data_analysis.py        # plot generation
 │
 ├── results/                # simulation output (created automatically)
+│   └──<initial state>_eta<eta value>_alpha<alpha over kappa value>/  
 └── plots/                  # figures (created automatically)
 ```
 
