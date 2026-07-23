@@ -121,7 +121,7 @@ def plot_mean_erg():
     """Plots the mean (expectation value) of the ergotropy for every unravelling, plus E_unc(t) and erg_unc(t)."""
     fig, ax = plt.subplots(figsize = (6, 5))
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "erg_" + unr[j] + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "erg_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     # unconditional energy
@@ -138,9 +138,9 @@ def plot_mean_erg():
     ax.set_ylim(0, 0.3) if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
     ax.legend(loc = "upper right" if (instate == "p" and alpha_over_kappa == 1.0 and eta == 0.4) else "lower right", ncol = 2)
 
-    fig.suptitle(
-            f"Mean values (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Mean values (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "mean_erg.png", dpi = 300)
@@ -152,7 +152,7 @@ def plot_mean_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "cap_" + unr[j] + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "cap_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     # unconditional capacity
@@ -164,9 +164,9 @@ def plot_mean_cap():
     ax.grid(True, linestyle = ':', alpha = 0.6)
     ax.legend(loc = "upper right" if (instate == "p" and alpha_over_kappa == 1.0 and eta == 0.4) else "center right", ncol = 2)
 
-    fig.suptitle(
-            f"Mean values (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Mean values (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "mean_cap.png", dpi = 300)
@@ -182,7 +182,7 @@ def plot_var_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "var_erg_" + unr[j] + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "var_erg_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -191,9 +191,9 @@ def plot_var_erg():
 
     ax.legend(loc = "upper right" if (instate == "p" and eta == 0.4 and alpha_over_kappa == 1.0) else "upper left", ncol = 2)
 
-    fig.suptitle(
-            f"Variance (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Variance (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "var_erg.png", dpi = 300)
@@ -205,7 +205,7 @@ def plot_var_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "var_cap_" + unr[j] + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "var_cap_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -214,9 +214,9 @@ def plot_var_cap():
 
     ax.legend(loc = "upper right", ncol = 2)
 
-    fig.suptitle(
-            f"Variance (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Variance (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "var_cap.png", dpi = 300)
@@ -230,8 +230,8 @@ def plot_norm_var_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        mean = np.loadtxt(resultsdir + "erg_" + unr[j] + ".dat", delimiter = "\t")
-        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + ".dat", delimiter = "\t")
+        mean = np.loadtxt(resultsdir + "erg_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
+        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         norm_var = []
         tlist = []
         for x, y in zip(mean, var):
@@ -247,9 +247,9 @@ def plot_norm_var_erg():
     ax.set_yscale("log") if (instate == "m" and eta == 1.0 and alpha_over_kappa == 0.4) else None
     ax.legend(loc = "upper left" if (instate == "p" and eta == 1.0 and alpha_over_kappa == 0.4) else "upper right", ncol = 2)
 
-    fig.suptitle(
-            f"Normalized variance (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Normalized variance (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "norm_var_erg.png", dpi = 300)
@@ -261,8 +261,8 @@ def plot_norm_var_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        mean = np.loadtxt(resultsdir + "cap_" + unr[j] + ".dat", delimiter = "\t")
-        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + ".dat", delimiter = "\t")
+        mean = np.loadtxt(resultsdir + "cap_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
+        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         norm_var = []
         tlist = []
         for x, y in zip(mean, var):
@@ -278,9 +278,9 @@ def plot_norm_var_cap():
     ax.set_yscale("log") if (instate == "m" and eta == 1.0 and alpha_over_kappa == 0.4) else None
     ax.legend(loc = "upper right", ncol = 2)
 
-    fig.suptitle(
-            f"Normalized variance (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Normalized variance (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "norm_var_cap.png", dpi = 300)
@@ -296,7 +296,7 @@ def plot_skw_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -304,9 +304,9 @@ def plot_skw_erg():
     ax.grid(True, linestyle = ':', alpha = 0.6)
     ax.legend(loc = "upper right" if (instate == "p" and eta == 0.4 and alpha_over_kappa == 1.0) else "upper left", ncol = 2)
 
-    fig.suptitle(
-            f"Skewness (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Skewness (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "skw_erg.png", dpi = 300)
@@ -318,7 +318,7 @@ def plot_skw_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + ".dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\kappa t$")
@@ -327,9 +327,9 @@ def plot_skw_cap():
 
     ax.legend(loc = "upper right", ncol = 2)
 
-    fig.suptitle(
-            f"Skewness (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Skewness (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "skw_cap.png", dpi = 300)
@@ -343,8 +343,8 @@ def plot_norm_skw_erg():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + ".dat", delimiter = "\t")
-        skw = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + ".dat", delimiter = "\t")
+        var = np.loadtxt(resultsdir + "var_erg_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
+        skw = np.loadtxt(resultsdir + "skw_erg_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         norm_skw = []
         tlist = []
         for x, y in zip(var, skw):
@@ -359,9 +359,9 @@ def plot_norm_skw_erg():
     ax.grid(True, linestyle = ':', alpha = 0.6)
     ax.legend(loc = "center right", ncol = 2)
 
-    fig.suptitle(
-            f"Normalized skewness (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Normalized skewness (erg): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "norm_skw_erg.png", dpi = 300)
@@ -373,8 +373,8 @@ def plot_norm_skw_cap():
     fig, ax = plt.subplots(figsize = (6, 5))
 
     for j in range(len(unr)):
-        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + ".dat", delimiter = "\t")
-        skw = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + ".dat", delimiter = "\t")
+        var = np.loadtxt(resultsdir + "var_cap_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
+        skw = np.loadtxt(resultsdir + "skw_cap_" + unr[j] + ".dat", delimiter = "\t", comments = "#")
         norm_skw = []
         tlist = []
         for x, y in zip(var, skw):
@@ -390,9 +390,9 @@ def plot_norm_skw_cap():
 
     ax.legend(loc = "upper right", ncol = 2)
 
-    fig.suptitle(
-            f"Normalized skewness (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-        )
+    # fig.suptitle(
+    #        f"Normalized skewness (cap): initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    #    )
 
     plt.tight_layout()
     plt.savefig(plotsdir + "norm_skw_cap.png", dpi = 300)
@@ -414,7 +414,7 @@ def plot_histograms():
         # ---------- ergotropy ----------
         fig, ax = plt.subplots(figsize=(6, 5))
         for j in range(len(unr)):
-            data_erg = np.loadtxt(resultsdir + "histo_erg_" + unr[j] + "_t" + str(t) + ".dat")
+            data_erg = np.loadtxt(resultsdir + "histo_erg_" + unr[j] + "_t" + str(t) + ".dat", comments = "#")
             ax.hist(
                 data_erg,
                 bins = 50,
@@ -424,7 +424,7 @@ def plot_histograms():
                 label = r"$\bar{\epsilon}_{" + unr_labels[j] + ", " + str(eta) + r"}$",
                 # density = True,
             )
-        ax.set_title(f"Trajectories' ergotropy distribution at t = {t} s:\n initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
+        # ax.set_title(f"Trajectories' ergotropy distribution at t = {t} s:\n initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
         ax.set_xlabel(r"$\bar{\epsilon}_{unr, \eta}$")
         # ax.set_ylabel("Density")
         ax.grid(True, linestyle = ':', alpha = 0.6)
@@ -436,7 +436,7 @@ def plot_histograms():
         # ---------- capacity ----------
         fig, ax = plt.subplots(figsize=(6, 5))
         for j in range(len(unr)):
-            data_cap = np.loadtxt(resultsdir + "histo_cap_" + unr[j] + "_t" + str(t) + ".dat")
+            data_cap = np.loadtxt(resultsdir + "histo_cap_" + unr[j] + "_t" + str(t) + ".dat", comments = "#")
             ax.hist(
                 data_cap,
                 bins = 50,
@@ -446,7 +446,7 @@ def plot_histograms():
                 label = r"$\bar{\mathcal{C}}_{" + unr_labels[j] + ", " + str(eta) + r"}$",
                 # density = True,
             )
-        ax.set_title(f"Trajectories' capacity distribution at t = {t} s:\n initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
+        # ax.set_title(f"Trajectories' capacity distribution at t = {t} s:\n initial " + instate + " state, "  r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories.")
         ax.set_xlabel(r"$\bar{\mathcal{C}}_{unr, \eta}$")
         # ax.set_ylabel("Density")
         ax.grid(True, linestyle = ':', alpha = 0.6)
@@ -469,7 +469,7 @@ def plot_ss_erg():
     etalinestyle = [":", "-."]
     for j in range(len(unr)):
         for i in range(len(etavalues)):
-            data = np.loadtxt(resultsroot + "ss_erg_" + unr[j] + "_eta" + str(etavalues[i]) + ".dat")
+            data = np.loadtxt(resultsroot + "ss_erg_" + unr[j] + "_eta" + str(etavalues[i]) + ".dat", comments = "#")
             ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\epsilon^{ss}_{" + unr_labels[j] + ", " + str((etavalues[i])) + r"}$", linestyle = etalinestyle[i])
 
     data = np.loadtxt(resultsroot + "ss_erg_unc.dat")
@@ -483,9 +483,9 @@ def plot_ss_erg():
     ax.grid(True, linestyle = ":", alpha = 0.6)
     ax.legend(loc = "lower right", ncol = 4)
 
-    plt.suptitle(
-        f"Steady state daemonic ergotropy for different unravellings as function of " r"$\alpha / \kappa$" f"\n with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-    )
+    # plt.suptitle(
+    #    f"Steady state daemonic ergotropy for different unravellings as function of " r"$\alpha / \kappa$" f"\n with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    # )
 
 
     plt.tight_layout()
@@ -510,9 +510,9 @@ def plot_ss_cap():
     ax.grid(True, linestyle = ":", alpha = 0.6)
     ax.legend(loc = "lower left", ncol = 2)
 
-    plt.suptitle(
-        f"Steady state daemonic capacity for different unravellings as function of " r"$\alpha / \kappa$" f"\n with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
-    )
+    # plt.suptitle(
+    #    f"Steady state daemonic capacity for different unravellings as function of " r"$\alpha / \kappa$" f"\n with{NUMBER_OF_TIMEINTERVALS: .1e} time intervals and{NUMBER_OF_TRAJECTORIES : .1e} trajectories."
+    # )
 
     plt.tight_layout()
     plt.savefig(plotsroot + "ss_cap.png", dpi = 300)
@@ -527,7 +527,7 @@ def plot_power_ev():
     """Plot the average power evolution for different unravelling against time and the energy thresholds"""
     fig, ax = plt.subplots(figsize = (6, 5))
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "powers/" + "avepower_" + unr[j] + "_against_time.dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "powers/" + "avepower_" + unr[j] + "_against_time.dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{P}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     # unconditional power
@@ -544,9 +544,9 @@ def plot_power_ev():
     ax.legend(loc = "upper right")
     ax.set_yscale("log") if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
 
-    fig.suptitle(
-        f"Average powers as function of time: initial " + instate + f" state, " r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and {NUMBER_OF_TRAJECTORIES : .1e} trajectories"
-        )
+    # fig.suptitle(
+    #     f"Average powers as function of time: initial " + instate + f" state, " r"$\alpha / \kappa$" f" = {alpha_over_kappa},\n" f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and {NUMBER_OF_TRAJECTORIES : .1e} trajectories"
+    #     )
     
     plt.tight_layout()
     plt.savefig(plotsdir + "avepower_against_time.png", dpi = 300)
@@ -554,7 +554,7 @@ def plot_power_ev():
 
     fig, ax = plt.subplots(figsize = (6, 5))
     for j in range(len(unr)):
-        data = np.loadtxt(resultsdir + "powers/" + "avepower_" + unr[j] + "_against_energy_threshold.dat", delimiter = "\t")
+        data = np.loadtxt(resultsdir + "powers/" + "avepower_" + unr[j] + "_against_energy_threshold.dat", delimiter = "\t", comments = "#")
         ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\bar{\mathcal{P}}_{" + unr_labels[j] + ", " + str(eta) + r"}$")
 
     ax.set_xlabel(r"$\epsilon_{threshold}$")
@@ -563,9 +563,9 @@ def plot_power_ev():
     ax.legend(loc = "lower right")
     ax.set_yscale("log") if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
 
-    fig.suptitle(
-        f"Average powers as function of energy thresholds: initial " + instate + f" state,\n" r"$\alpha / \kappa$" f" = {alpha_over_kappa}," f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and {NUMBER_OF_TRAJECTORIES : .1e} trajectories"
-        )
+    # fig.suptitle(
+    #    f"Average powers as function of energy thresholds: initial " + instate + f" state,\n" r"$\alpha / \kappa$" f" = {alpha_over_kappa}," f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and {NUMBER_OF_TRAJECTORIES : .1e} trajectories"
+    #    )
     
     plt.tight_layout()
     plt.savefig(plotsdir + "avepower_against_energy_threshold.png", dpi = 300)

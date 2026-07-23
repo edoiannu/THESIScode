@@ -321,12 +321,14 @@ println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 println("Printing results...")
 # --- average power against time ----------------------------------------------
 open(processpath * "avepower_" * unravelling * "_against_time.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, pw) in zip(tlist, av_power_ev_time)
         @printf(io, "%.3f\t%.8f\n", t, pw)
     end
 end
 # --- average power against energy threshold ----------------------------------
 open(processpath * "avepower_" * unravelling * "_against_energy_threshold.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, pw) in zip(Elimit, av_power_ev_thre)
         @printf(io, "%.3f\t%.8f\n", t, pw)
     end

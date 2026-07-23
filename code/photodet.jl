@@ -289,33 +289,39 @@ println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 println("Printing results...")
 # --- mean values -------------------------------------------------------------
 open(processpath * "erg_pd.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, erg) in zip(tlist, erg_mean)
         @printf(io, "%.3f\t%.8f\n", t, erg)
     end
 end
 open(processpath * "cap_pd.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, cap) in zip(tlist, cap_mean)
         @printf(io, "%.3f\t%.8f\n", t, cap)
     end
 end
 # --- variances ---------------------------------------------------------------
 open(processpath * "var_erg_pd.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, ergvar) in zip(tlist, erg_var)
         @printf(io, "%.3f\t%.8f\n", t, ergvar)
     end
 end
 open(processpath * "var_cap_pd.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, capvar) in zip(tlist, cap_var)
         @printf(io, "%.3f\t%.8f\n", t, capvar)
     end
 end
 # --- skewnesses --------------------------------------------------------------
 open(processpath * "skw_erg_pd.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, ergskw) in zip(tlist, erg_skw)
         @printf(io, "%.3f\t%.8f\n", t, ergskw)
     end
 end
 open(processpath * "skw_cap_pd.dat", "w") do io
+    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
     for (t, capskw) in zip(tlist, cap_skw)
         @printf(io, "%.3f\t%.8f\n", t, capskw)
     end
@@ -323,11 +329,13 @@ end
 # --- ergotropy and capacity distributions ------------------------------------
 for (i_t, t) in enumerate(target_times)
     open(processpath * "histo_erg_pd_t$(t).dat", "w") do io
+        println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
         for val in prog_erg_histo[i_t]
             @printf(io, "%.8f\n", val)
         end
     end
     open(processpath * "histo_cap_pd_t$(t).dat", "w") do io
+        println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
         for val in prog_cap_histo[i_t]
             @printf(io, "%.8f\n", val)
         end
