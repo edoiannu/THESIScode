@@ -1,4 +1,4 @@
-# === SYSTEM'S PARAMETERS ===
+# === PROCESS' PARAMETERS ===
 # initial state {p (pure), m (maximally mixed)}
 INSTATE         p
 # alpha over kappa value

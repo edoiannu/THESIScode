@@ -58,7 +58,9 @@ The unconditional evolution (`unc`) provides the reference curves: the mean ener
 ├── data_analysis.py        # plot generation
 │
 ├── results/                # simulation output (created automatically)
-│   └──<initial state>_eta<eta value>_alpha<alpha over kappa value>/    # where the script saves the results (mean value, variance, skewness) of the conditional dynamics of the given process
+│   └──<initial state>_eta<eta value>_alpha<alpha over kappa value>/    # where the script saves the results (mean value, variance, skewness,
+│                                                                         trajectories' histograms) of the conditional dynamics of the given
+│                                                                         process
 └── plots/                  # figures (created automatically)
 ```
 
