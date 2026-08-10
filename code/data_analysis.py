@@ -135,7 +135,16 @@ def plot_mean_erg():
     ax.set_xlabel(r"$\kappa t$")
     ax.set_ylabel(r"$\bar{\epsilon}_{unr, \eta} (t) / \omega_0$")
     ax.grid(True, linestyle = ':', alpha = 0.6)
-    ax.set_ylim(0, 0.3) if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
+    if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0):
+        ax.set_ylim(0, 0.3)
+    elif (instate == "p" and alpha_over_kappa == 0.4 and eta == 1.0):
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 0.35)
+    elif (instate == "p" and alpha_over_kappa == 1.0 and eta == 0.4):
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 0.6)
+
+        
     ax.legend(loc = "upper right" if (instate == "p" and alpha_over_kappa == 1.0 and eta == 0.4) else "lower right", ncol = 2)
 
     # fig.suptitle(
@@ -474,12 +483,12 @@ def plot_ss_erg():
 
     data = np.loadtxt(resultsroot + "ss_erg_unc.dat")
     ax.plot(data[:,0], data[:,1], color = "black", label = r"$\epsilon^{ss}_{unc}$")
-
     data = np.loadtxt(resultsroot + "ss_en_unc.dat")
     ax.plot(data[:,0], data[:,1], color = "gray", label = r"$E^{ss}_{unc}$")
-
     ax.set_xlabel(r"$\kappa / \alpha$")
     ax.set_ylabel(r"$\bar{\epsilon}_{ss}$")
+    ax.set_xlim(0, 2)
+    ax.set_ylim(0, 0.5)
     ax.grid(True, linestyle = ":", alpha = 0.6)
     ax.legend(loc = "lower right", ncol = 4)
 
@@ -503,8 +512,8 @@ def plot_ss_cap():
             data = np.loadtxt(resultsroot + "ss_cap_" + unr[j] + "_eta" + str(etavalues[i]) + ".dat")
             ax.plot(data[:,0], data[:,1], color = unr_colors[j], label = r"$\epsilon^{ss}_{" + unr_labels[j] + ", " + str((etavalues[i])) + r"}$", linestyle = etalinestyle[i])
 
-    data = np.loadtxt(resultsroot + "ss_cap_unc.dat")
-    ax.plot(data[:,0], data[:,1], color = "black", label = r"$\epsilon^{ss}_{unc}$")
+    # data = np.loadtxt(resultsroot + "ss_cap_unc.dat")
+    # ax.plot(data[:,0], data[:,1], color = "black", label = r"$\epsilon^{ss}_{unc}$")
     ax.set_xlabel(r"$\kappa / \alpha$")
     ax.set_ylabel(r"$\bar{\epsilon}_{ss}$")
     ax.grid(True, linestyle = ":", alpha = 0.6)
@@ -561,7 +570,7 @@ def plot_power_ev():
     ax.set_ylabel(r"$\bar{\mathcal{P}}_{unr, \eta} (t) / \omega_0$")
     ax.grid(True, linestyle = ":", alpha = 0.6)
     ax.legend(loc = "lower right")
-    ax.set_yscale("log") if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
+    # ax.set_yscale("log") if (instate == "m" and alpha_over_kappa == 0.4 and eta == 1.0) else None
 
     # fig.suptitle(
     #    f"Average powers as function of energy thresholds: initial " + instate + f" state,\n" r"$\alpha / \kappa$" f" = {alpha_over_kappa}," f"{NUMBER_OF_TIMEINTERVALS : .1e} time intervals and {NUMBER_OF_TRAJECTORIES : .1e} trajectories"
@@ -578,17 +587,17 @@ def plot_power_ev():
 
 if __name__ == "__main__":
 
-    plot_mean_erg()
-    plot_mean_cap()
-    plot_var_erg()
-    plot_var_cap()
-    plot_norm_var_erg()
-    plot_norm_var_cap()
-    plot_skw_erg()
-    plot_skw_cap()
-    plot_norm_skw_erg()
-    plot_norm_skw_cap()
-    plot_histograms()
-    """plot_ss_erg()
-    plot_ss_cap()"""
-    plot_power_ev()
+    # plot_mean_erg()
+    # plot_mean_cap()
+    # plot_var_erg()
+    # plot_var_cap()
+    # plot_norm_var_erg()
+    # plot_norm_var_cap()
+    # plot_skw_erg()
+    # plot_skw_cap()
+    # plot_norm_skw_erg()
+    # plot_norm_skw_cap()
+    # plot_histograms()
+    plot_ss_erg()
+    # plot_ss_cap()
+    # plot_power_ev()

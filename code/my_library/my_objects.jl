@@ -127,16 +127,19 @@ function dyne_kraus(HS, ρ_t, cops, η, heterodyne)
     num = nothing
     ρ_tdt = nothing             # evolved states
     dy_t = nothing
+    dy1_t = nothing
+    dy2_t = nothing
+    M_dy = nothing
     # photo-current
-    dy(ρ, c) = sqrt(η) * tr((c + dagger(c)) * ρ) * dt + sqrt(dt) * randn()
-    # kraus operator
-    M(ρ, c) = I - 1im * HS * dt - 0.5 * dagger(c) * c * dt + sqrt(η) * c * dy(ρ, c)
     if heterodyne == true
-        M_dy = M(ρ_t, (cops + 1im * cops) / sqrt(2))
+        dy1_t = sqrt(η/2) * tr((cops + dagger(cops)) * ρ_t) * dt + sqrt(dt) * randn()
+        dy2_t = sqrt(η/2) * tr(1im * (cops - dagger(cops)) * ρ_t) * dt + sqrt(dt) * randn()
+        M_dy = I - 1im * HS * dt - 0.5 * dagger(cops) * cops * dt + sqrt(η/2) * cops * dy1_t + 1im * sqrt(η/2) * cops * dy2_t
     else
-        M_dy = M(ρ_t, cops)
+        # M_dy = M(ρ_t, cops)
+        dy_t = sqrt(η) * tr((cops + dagger(cops)) * ρ_t) * dt + sqrt(dt) * randn()
+        M_dy = I - 1im * HS * dt - 0.5 * dagger(cops) * cops * dt + sqrt(η) * cops * dy_t
     end
-    # M = I - 1im * HS * dt - 0.5 * dagger(cops) * cops * dt + sqrt(η) * cops * dy_t
     num = M_dy * ρ_t * dagger(M_dy) + (1 - η) * cops * ρ_t * dagger(cops) * dt
     ρ_tdt = num / tr(num)
     return ρ_tdt

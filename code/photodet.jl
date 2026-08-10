@@ -84,6 +84,11 @@ if η_val < 0 || η_val > 1
     error("The detection efficiency must be between 0 and 1.")
 end
 
+# check on chunk dimension
+if chunk_dim < nworkers()
+    error("Chunk dimension must be larger than the number of workers.")
+end
+
 # =============================================================================
 # 3. OUTPUT FOLDER AND RUN SIZE CHECK
 # =============================================================================

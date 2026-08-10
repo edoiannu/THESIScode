@@ -156,7 +156,6 @@ rem = chunk_dim % nworkers()
 
 # cycle over the α/κ values
 for α in αlist
-    global αind += 1
     chunk_start_time = time()   # we start counting the execution time of the chunk
     prog_ss_erg_sum = 0         # progressive steady states daemonic ergotropy sum
     prog_ss_cap_sum = 0         # progressive steady states daemonic capacity sum
@@ -220,6 +219,7 @@ for α in αlist
     chunk_end_time = time()     # we end counting the execution time of the chunk
     global prog_time += chunk_end_time - chunk_start_time
     println("α/κ = ", round(α, digits = 5), ", ", round(αind / NUMBER_OF_ALPHAPOINTS * 100, digits = 1), "%. Run time: ", round(prog_time, digits = 2), "s.")
+    global αind += 1
 end
 
 end_time = time()

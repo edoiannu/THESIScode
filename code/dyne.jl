@@ -102,6 +102,11 @@ if η_val < 0 || η_val > 1
     error("The detection efficiency must be between 0 and 1.")
 end
 
+# check on chunk dimension
+if chunk_dim < nworkers()
+    error("Chunk dimension must be larger than the number of workers.")
+end
+
 # =============================================================================
 # 3. OUTPUT FOLDER AND RUN SIZE CHECK
 # =============================================================================
@@ -179,14 +184,16 @@ end
     c = σ_m         # collapse operator
     finalt = $t_f
     dt = $deltat
-
+    
     clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x    # to set at zero "numerical zeros"
     # collapse operator definition
-    if $det_type == "hod"
-        const cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
-    else
-        const cops = c
-    end
+    # if $det_type == "hod"
+    const cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
+    # println(cops)
+    # else
+      #  const cops = c
+      #  println(cops)
+    # end
     
     NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)
     tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)
@@ -278,8 +285,10 @@ for i in 1:chunk_num
     # aggregate the results of this chunk to the progressive sums of the daemonic quantities
     if prog_erg_sum === nothing
         global prog_erg_sum = erg_chunk
+        # print(erg_chunk)
     else
         global prog_erg_sum += erg_chunk
+        # print(erg_chunk)
     end
     if prog_cap_sum === nothing
         global prog_cap_sum = cap_chunk
