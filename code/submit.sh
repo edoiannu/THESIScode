@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=hed_p_eta0.4_alpha1.0
+#SBATCH --job-name=hed_m_eta1.0_alpha0.4
 #SBATCH --output=slurm_output/results_%j.log
 #SBATCH --error=slurm_output/errors_%j.log
 #SBATCH --ntasks=10
