@@ -4,7 +4,7 @@ INSTATE         m
 # alpha over kappa value
 ALPHA           0.4
 # eta value
-ETA             1.0
+ETA             0.1
 # === SIMULATION PARAMETERS FOR A NEW FOLDER ===
 # evolution final time
 FINALT          10
@@ -19,7 +19,7 @@ CHUNKDIM        100
 # finale alpha over kappa value
 FINALALPHA      2
 # alpha over kappa points number
-ALPHAPOINTS     50
+ALPHAPOINTS     100
 # === HISTOGRAM'S SNAPSHOT ===
 HISTOTIME       0.5 1.0 1.5 2.0 2.5 5.0 7.5
 # === ENERGY'S THRESHOLDS FOR AVERAGE POWER EVOLUTION ===
