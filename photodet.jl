@@ -97,7 +97,7 @@ end
 # string that identifies the input simulation's parameters
 inputstring = instate * "_eta" * string(η_val) * "_alpha" * string(α_val)
 # path where to save the simulation's results
-processpath = "results/" * inputstring * "/"
+processpath = joinpath(@__DIR__, "results/" * inputstring * "/")
 mkpath(processpath)
 
 # --- run size of a possible previous simulation ------------------------------
@@ -123,7 +123,7 @@ if isfile(joinpath(processpath, "params.dat"))
     end
     global NUMBER_OF_TIMEINTERVALS = Int64(t_f / deltat)
 else
-    for line in eachline("input.dat")
+    for line in eachline(inputfile)
         # to split line's elements
         parts = split(line)
         # conditions to skip a line
@@ -157,7 +157,7 @@ end
 @everywhere begin
     # libraries inclusion for each worker
     using JLD2  # necessary because @save is called inside each worker
-    include("my_library/my_objects.jl")
+    include(joinpath(@__DIR__, "my_library/my_objects.jl"))
     
     # constants definition for each core
     α_over_κ = $α_val

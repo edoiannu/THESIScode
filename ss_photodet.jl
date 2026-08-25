@@ -97,7 +97,7 @@ end
 process = "pd_eta" * string(η_val)  # process name
 # the steady states mix several α/κ values, so they do not belong to a single
 # process folder: they are written in the results' root
-mkpath("results/")
+mkpath(joinpath(@__DIR__, "results/"))
 
 # =============================================================================
 # 4. WORKERS INITIALIZATION
@@ -106,7 +106,7 @@ mkpath("results/")
 # workers initialization
 @everywhere begin
     # libraries inclusion for each worker
-    include("my_library/my_objects.jl")
+    include(joinpath(@__DIR__, "my_library/my_objects.jl"))
 
     # constants definition for each core
     η = $η_val
@@ -233,13 +233,13 @@ println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 println("Printing results...")
 
 # --- steady state daemonic ergotropy -----------------------------------------
-open("results/ss_erg_" * process * ".dat", "w") do io
+open(joinpath(@__DIR__, "results/ss_erg_" * process * ".dat"), "w") do io
     for (t, erg) in zip(αlist, ss_ergotropies)
         @printf(io, "%.3f\t%.8f\n", t, erg)
     end
 end
 # --- steady state daemonic capacity ------------------------------------------
-open("results/ss_cap_" * process * ".dat", "w") do io
+open(joinpath(@__DIR__, "results/ss_cap_" * process * ".dat"), "w") do io
     for (t, cap) in zip(αlist, ss_capacities)
         @printf(io, "%.3f\t%.8f\n", t, cap)
     end
