@@ -1,4 +1,0 @@
-julia -p 8 ss_photodet.jl
-julia -p 8 ss_dyne.jl hod 0
-julia -p 8 ss_dyne.jl hod 90
-julia -p 8 ss_dyne.jl hed
