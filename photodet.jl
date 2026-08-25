@@ -26,6 +26,7 @@ using Printf        # for the formatted printing (@printf) of the results
 # =============================================================================
 
 # variables initialization
+inputfile = joinpath(@__DIR__, "input.dat")
 instate = nothing                   # single character variable that indicates the simulation's initial state 
 α_val = nothing                     # resonant field intensity over emitting rate value
 η_val = nothing                     # detectiong efficiency value
@@ -35,7 +36,7 @@ NUMBER_OF_TRAJECTORIES = nothing    # simulation's number of trajectories
 chunk_dim = nothing                 # number of trajectories to evolve simultaneously
 
 # reading system's parameters from the input.dat
-for line in eachline("input.dat")
+for line in eachline(inputfile)
     # to split line's elements
     parts = split(line)
     nparts = length(parts)

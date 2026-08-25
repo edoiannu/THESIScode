@@ -47,6 +47,7 @@ end
 # =============================================================================
 
 # variables initialization
+inputfile = joinpath(@__DIR__, "input.dat")
 instate = nothing                   # single character variables that indicates the simulation's initial state
 α_val = nothing                     # driving field intensity over the system's emitting rate
 η_val = nothing                     # detection efficiency value
@@ -58,7 +59,7 @@ Nthresholds = nothing               # number of energy thresholds
 MAXthreshold = nothing              # maximum value of energy threshold
 
 # reading system's parameters from the input.dat
-for line in eachline("input.dat")
+for line in eachline(inputfile)
     # to split line's elements
     parts = split(line)
     nparts = length(parts)

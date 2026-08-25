@@ -29,17 +29,17 @@ println("=== STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOU
 # =============================================================================
 
 # variables initialization
-inputfile = "input.dat"             # name of the file from which we read the simulation's parameters
-unravelling = nothing               # type of unravveling
-instate = nothing                   # single character variable that indicates the simulation's initial state
-ρ_0 = nothing                       # initial state 
-η_val = nothing                     # detection efficiency value
-t_f = nothing                       # simulation's final time
-deltat = nothing                    # simulation's time step
-α_f = nothing                       # final α/κ value (resonant field intensity over emitting rate value)
-NUMBER_OF_ALPHAPOINTS = nothing     # number of α/κ points
-NUMBER_OF_TRAJECTORIES = nothing    # simulation's number of trajectories
-chunk_dim = nothing                 # number of trajectories to evolve simultaneously
+inputfile = joinpath(@__DIR__, "input.dat") # name of the file from which we read the simulation's parameters
+unravelling = nothing                       # type of unravveling
+instate = nothing                           # single character variable that indicates the simulation's initial state
+ρ_0 = nothing                               # initial state 
+η_val = nothing                             # detection efficiency value
+t_f = nothing                               # simulation's final time
+deltat = nothing                            # simulation's time step
+α_f = nothing                               # final α/κ value (resonant field intensity over emitting rate value)
+NUMBER_OF_ALPHAPOINTS = nothing             # number of α/κ points
+NUMBER_OF_TRAJECTORIES = nothing            # simulation's number of trajectories
+chunk_dim = nothing                         # number of trajectories to evolve simultaneously
 
 # reading from file simulation the remaining parameters
 for line in eachline(inputfile)
