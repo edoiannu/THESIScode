@@ -4,17 +4,17 @@ INSTATE         m
 # alpha over kappa value
 ALPHA           0.4
 # eta value
-ETA             1.0
+ETA             0.7
 # === SIMULATION PARAMETERS FOR A NEW FOLDER ===
 # evolution final time
 FINALT          10
 # time intervals width
 dt              0.001
 # number of trajectories
-NTRAJ           1000
+NTRAJ           50000
 # === FOR PARALLEL COMPUTING ===
 # chunk dimension for parallel computing
-CHUNKDIM        100
+CHUNKDIM        250
 # === FOR STEADY STATES EVOLUTION ===
 # finale alpha over kappa value
 FINALALPHA      2
