@@ -211,7 +211,7 @@ global Elimit = range(0.0, MAXthreshold, Nthresholds)
             t = tlist[i]
             ρ_tdt = ($det_type == "pd" ? photodet_kraus(HS(α_over_κ), ρ_t, cops, η) : dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne))
             erg = ergotropy(ρ_tdt)      # ergotropy for the state at time t + dt
-            power = erg / (t + dt)      # ergotropic power for the state at time t + dt
+            power = (erg - energy(ρ_0)) / (t + dt)      # ergotropic power for the state at time t + dt
             # updating power's evolution
             power_ev[i] = power
             # updating threshold powers

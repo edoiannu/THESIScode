@@ -1,6 +1,6 @@
 # === PROCESS' PARAMETERS ===
 # initial state {p (pure), m (maximally mixed)}
-INSTATE         p
+INSTATE         m
 # alpha over kappa value
 ALPHA           0.4
 # eta value
@@ -9,12 +9,12 @@ ETA             1.0
 # evolution final time
 FINALT          10
 # time intervals width
-dt              0.001
+dt              0.01
 # number of trajectories
-NTRAJ           50000
+NTRAJ           1000
 # === FOR PARALLEL COMPUTING ===
 # chunk dimension for parallel computing
-CHUNKDIM        250
+CHUNKDIM        100
 # === FOR STEADY STATES EVOLUTION ===
 # finale alpha over kappa value
 FINALALPHA      2
@@ -23,5 +23,5 @@ ALPHAPOINTS     100
 # === HISTOGRAM'S SNAPSHOT ===
 HISTOTIME       0.5 1.0 1.5 2.0 2.5 5.0 7.5
 # === ENERGY'S THRESHOLDS FOR AVERAGE POWER EVOLUTION ===
-NTHRESHOLDS     50
-MAXTHRESHOLD    1.5
+NTHRESHOLDS     1000
+MAXTHRESHOLD    1.0
