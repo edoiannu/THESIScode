@@ -1,6 +1,6 @@
 # === PROCESS' PARAMETERS ===
 # initial state {p (pure), m (maximally mixed)}
-INSTATE         p
+INSTATE         m
 # alpha over kappa value
 ALPHA           0.4
 # eta value
@@ -21,7 +21,7 @@ FINALALPHA      2
 # alpha over kappa points number
 ALPHAPOINTS     100
 # === HISTOGRAM'S SNAPSHOT ===
-HISTOTIME       0.5 1.0 1.5 2.0 2.5 5.0 7.5
+HISTOTIME       3.5
 # === ENERGY'S THRESHOLDS FOR AVERAGE POWER EVOLUTION ===
 NTHRESHOLDS     50
 MAXTHRESHOLD    1.5
