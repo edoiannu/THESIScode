@@ -7,9 +7,9 @@ This repository contains Julia implementations for thesis research on quantum th
 ### Key Research Areas
 
 - **Ergotropy**: Maximum work extractable from an open quantum system, whose unconditional evolution is governed by the Markovian Master Equation (MME).
-- **Daemonic ergotropy**: Exploiting the correlations of an open quantum system to overcome the ergotropy bound, through performing projective measurement on the environment: photodetection (PD), [...]
-- **Second and third moments analysis**: Statistical characterization of the daemonic ergotropy beyond the mean — we compute the second (variance) and third (skewness) moments across trajectories to quantify fluctuations and non-Gaussian features of the distribution; these are produced by `daemonic_ergotropy.jl` as `var_erg_*` and `skw_erg_*` outputs.
-- **Distribution snapshots**: Full probability distributions of daemonic ergotropy and capacity at selected times are generated (see `daemonic_erg_distribution.jl`); raw histograms are saved as `histo_erg_*_t*.dat` and `histo_cap_*_t*.dat` for detailed distributional analysis.
+- **Daemonic ergotropy**: Exploiting the correlations of an open quantum system to overcome the ergotropy bound, through performing projective measurement on the environment: photodetection (PD).
+- **Second and third moments analysis**: Statistical characterization of the daemonic ergotropy beyond the mean - we compute the second (variance) and third moments across trajectories to quantify fluctuations of the distribution.
+- **Distribution snapshots**: Full probability distributions of daemonic ergotropy and capacity at selected times are generated.
 - **Steady-State Analysis**: Long-time behavior of the (daemonic) ergotropy under the measurement protocols mentioned above.
 
 ## System Model
@@ -18,13 +18,13 @@ The simulations study a **driven-dissipative quantum two-level system** with:
 
 - **Parameters**:
   - `α/κ`: Ratio of driving field intensity to spontaneous emission rate
-  - `η`: Detection efficiency (0-1)
+  - `η`: Detection efficiency [0,1]
   - Initial state: Pure (ground state |0⟩) or maximally mixed (I/2)
 
 - **Measurement Types**:
-  - **pd** (Photo-detection): Direct photon counting
-  - **hod** (Homodyne detection): Measurement at a specific detection angle φ
-  - **hed** (Heterodyne detection): Simultaneous measurement of orthogonal quadratures
+  - **PD** (Photo-detection): Direct photon counting
+  - **HoD** (Homodyne detection): Measurement at a specific detection angle φ
+  - **HeD** (Heterodyne detection): Simultaneous measurement of orthogonal quadratures
 
 ## Project Structure
 
