@@ -1,18 +1,14 @@
-# THESIScode
-
-A Julia-based research project for analyzing quantum systems under continuous measurement, focusing on ergotropy, capacity, and daemonic processes in quantum thermodynamics.
+# Daemonic ergotropy computation for continuous a (un)monitored open quantum system
 
 ## Overview
 
-This repository contains Julia implementations for thesis research on quantum thermodynamics, specifically studying how quantum systems evolve under continuous measurement and how work can be extracted from these systems (ergotropy). The project analyzes both conditional (trajectory-based) and unconditional (ensemble average) dynamics of a driven-dissipative quantum two-level system.
+This repository contains Julia implementations for thesis research on quantum thermodynamics, specifically how much work can be extracted from an open quantum systems (ergotropy), performing or not a continuous measurement on the environment.
 
 ### Key Research Areas
 
-- **Ergotropy**: Maximum work extractable from a quantum state relative to a reference ground state
-- **Capacity**: Related measure of available energy in quantum states
-- **Daemonic Processes**: Analysis of quantum trajectories subject to continuous measurement (photodetection, homodyne, and heterodyne detection)
-- **Unconditional Dynamics**: Ensemble-averaged evolution governed by the master equation
-- **Steady-State Analysis**: Long-time behavior of systems under various measurement protocols
+- **Ergotropy**: Maximum work extractable from an open quantum system, whose unconditional evolution is governed by the Markovian Master Equation (MME).
+- **Daemonic ergotropy**: Exploiting the correlations of an open quantum system to overcome the ergotropy bound, through performing projective measurement on the environment: photodetection (PD), homodyne (HoD) and heterodyne detection (HeD). The unconditional evolution in this circumstance in ruled by the Stochastic Master Equation (SME).
+- **Steady-State Analysis**: Long-time behavior of the (daemonic) ergotropy under the measurement protocols mentioned above.
 
 ## System Model
 
