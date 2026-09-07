@@ -1,4 +1,4 @@
-# Daemonic ergotropy computation for continuous a (un)monitored open quantum system
+# Daemonic ergotropy computation for a monitored open quantum system
 
 ## Overview
 
@@ -14,12 +14,14 @@ This repository contains Julia implementations for thesis research on quantum th
 
 ## System Model
 
-The simulations study a **driven-dissipative quantum two-level system** with:
+The simulations study a **driven-dissipative quantum two-level system** ruled the Hamiltonian:
+
+$$ H_0 = \frac{\omega_0}{2} (\sigma_z + 1) $$
 
 - **Parameters**:
   - `α/κ`: Ratio of driving field intensity to spontaneous emission rate
-  - `η`: Detection efficiency [0,1]
-  - Initial state: Pure (ground state |0⟩) or maximally mixed (I/2)
+  - `η`: Detection efficiency $[0,1]$
+  - Initial state: Pure (ground state $\ket{0}$) or maximally mixed ($\mathbb{1}/2$)
 
 - **Measurement Types**:
   - **PD** (Photo-detection): Direct photon counting
