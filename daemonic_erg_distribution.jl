@@ -1,17 +1,16 @@
 # =============================================================================
-# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINUOUS DYNE-DETECTION ==
-# === DAEMONIC ERGOTROPY AND CAPACITY (AND RESPECTIVE MOMENTA) COMPUTATION ====
+# === DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINUOUS MEASUREMENT =====
+# === DAEMONIC ERGOTROPY (AND CAPACITY) DISTRIBUTION ==========================
 # === FROM STATE DYNAMICAL EVOLUTION ==========================================
 # =============================================================================
 #
 # Structure of the file:
 #   1. Parameters reading from the input file
 #   2. Checks on the input parameters and initial state definition
-#   3. Output folder, run size check (params.dat) and its writing
+#   3. Output folder, run size check (_params.dat) and its writing
 #   4. Workers initialization
-#   5. Simulation over the chunks of trajectories
-#   6. Central momenta reconstruction
-#   7. Results printing on files
+#   5. Simulation over the chunks of trajectories and daemonic ergotropy distribution reconstruction
+#   6. Results printing on files
 #
 # =============================================================================
 
@@ -21,21 +20,25 @@ using Printf        # for the formatted printing (@printf) of the results
 
 # preliminar control over arguments number
 if length(ARGS) < 1 || length(ARGS) > 2
-    error("Type decetion type:\n- For homodyne: 'hod' [detection angle]\n- For heterodyne: 'hed'")
+    error("Type considered unravelling: {pd, hod [detection_angle], hed}")
 end
 
-# reading parameter from terminal
-const det_type = ARGS[1]    # 'const' variables cannot be modified anymore
-if det_type == "hod"
-    const unravelling = det_type * ARGS[2]
+# reading the unravelling from terminal
+global det_type = ARGS[1]
+if det_type == "pd"
+    const unravelling = det_type
+    const ϕ_val = 0     # dummy value: ϕ is irrelevant for photo.detection and heterodyne detection, but must be defined to avoid errors
+    const het_val = false
+elseif det_type == "hod"
     const ϕ_val = parse(Int64, ARGS[2])
+    const unravelling = det_type * ARGS[2]
     const het_val = false
 elseif det_type == "hed"
-    const unravelling = det_type
-    const ϕ_val = 0         # dummy value: ϕ is irrelevant for heterodyne detection, but must be defined to avoid errors
+    const ϕ_val = 0    
+    const unravelling = det_type     
     const het_val = true
 else
-    error("Detection type must be homodyne ('hod') or heterodyne ('hed').")
+    error("Detection type must be photo-detection ('pd'), homodyne ('hod') or heterodyne ('hed').")
 end
 
 # =============================================================================
@@ -43,6 +46,7 @@ end
 # =============================================================================
 
 # variables initialization
+# @__DIR__: macro that returns the absolute path of the current directory as a string
 inputfile = joinpath(@__DIR__, "input.dat")
 instate = nothing                   # single character variable that indicates the simulation's initial state 
 α_val = nothing                     # resonant field intensity over emitting rate value
@@ -81,9 +85,7 @@ for line in eachline(inputfile)
     end
 end
 
-# number of time intervals implied by the input file: it is computed here (and
-# not only inside the workers) because it has to be written in params.dat below
-# NUMBER_OF_TIMEINTERVALS = Int64(t_f / deltat)
+# the run size (FINALT, dt and NTRAJ) is not read here: it is read in section 3, either from _params.dat (already existing process) or from input.dat (new one)
 
 # =============================================================================
 # 2. CHECKS ON THE INPUT PARAMETERS AND INITIAL STATE
@@ -113,19 +115,17 @@ end
 # =============================================================================
 
 # string that identifies the input simulation's parameters
+# the parameters that identify a process are: the initial state, the detection efficiency η and the driving field intensity over the system's emitting rate α/κ
 inputstring = instate * "_eta" * string(η_val) * "_alpha" * string(α_val)
 # path where to save the simulation's results
 processpath = joinpath(@__DIR__, "results/" * inputstring * "/")
 mkpath(processpath)
 
 # --- run size of a possible previous simulation ------------------------------
-# params.dat stores the number of trajectories and of time intervals actually
-# used to produce the data contained in this folder: it is the file the plotting
-# scripts have to read, so that they no longer depend on input.dat (which may
-# have been modified after the simulation)
-# same reading scheme used above for input.dat
-if isfile(joinpath(processpath, "params.dat"))
-    for line in eachline(joinpath(processpath, "params.dat"))
+# _params.dat stores the number of trajectories and of time intervals actually used to produce the data contained in this folder: it is the file the plotting scripts have to read, so that they no longer depend on input.dat (which may have been modified after the simulation) same reading scheme used above for input.dat
+# if a given process already exists
+if isfile(joinpath(processpath, "_params.dat"))
+    for line in eachline(joinpath(processpath, "_params.dat"))
         parts = split(line)
         if isempty(line) || startswith(line, "#")
             continue
@@ -140,6 +140,7 @@ if isfile(joinpath(processpath, "params.dat"))
         end
     end
     global NUMBER_OF_TIMEINTERVALS = Int64(t_f / deltat)
+# if instead a new process has been defined
 else
     for line in eachline(inputfile)
         # to split line's elements
@@ -159,7 +160,7 @@ else
     end
     global NUMBER_OF_TIMEINTERVALS = Int64(t_f / deltat)
     # write on processpath the number of trajectories and of time intervals
-    open(joinpath(processpath, "params.dat"), "w") do io
+    open(joinpath(processpath, "_params.dat"), "w") do io
         println(io, "# SIMULATION PARAMETERS USED TO PRODUCE THE DATA IN THIS FOLDER")
         println(io, "NTRAJ\t", NUMBER_OF_TRAJECTORIES)
         println(io, "FINALT\t", t_f)
@@ -186,18 +187,16 @@ end
     finalt = $t_f
     dt = $deltat
     
-    clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x    # to set at zero "numerical zeros"
-    # collapse operator definition
-    # if $det_type == "hod"
-    const cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
-    # println(cops)
-    # else
-      #  const cops = c
-      #  println(cops)
-    # end
-    
     NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)
     tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)
+
+    clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x    # to set at zero "numerical zeros"
+    # collapse operator definition
+    if $det_type == "hod"
+        const cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
+    else
+        const cops = c
+    end
 
     # pevolution function definition: it evolves a single trajectory and returns
     # the list of the states visited along it
@@ -205,7 +204,7 @@ end
         ρ_t = ρ_0   # initial state at time t=0
         results = [ρ_t]
         for i in tlist
-            ρ_tdt = dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne)
+            ρ_tdt = ($det_type == "pd" ? photodet_kraus(HS(α_over_κ), ρ_t, cops, η) : dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne))
             push!(results, ρ_tdt)
             ρ_t = ρ_tdt
         end
@@ -217,15 +216,13 @@ end
 # 5. SIMULATION
 # =============================================================================
 
-println("Dyne detection: initial ", instate, " state, α/κ = ", α_val, ", η = ", η_val, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " number of trajectories...")
+println("Daemonic ergotropy distribution (", unravelling, ", initial ", instate, " state, α/κ = ", α_val, ", η = ", η_val, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " number of trajectories)...")
 
 prog_time = 0                                           # progressive run time
 start_time = time()                                     # initial run time
 chunk_ind = 0                                           # to count the chunk number
 chunk_num = Int64(NUMBER_OF_TRAJECTORIES / chunk_dim)   # number of chunk
 target_indices = [findfirst(t -> abs(t - target) < 1e-9, tlist) for target in target_times] # snapshots' time indices
-prog_erg_sum = nothing                                          # progressive daemonic ergotropy sum
-prog_cap_sum = nothing                                          # progressive daemonic capacity sum
 prog_erg_histo = [Float64[] for _ in 1:length(target_times)]    # list to progressively fill with the single states' ergotropy of each target time
 prog_cap_histo = [Float64[] for _ in 1:length(target_times)]    # list to progressively fill with the single states' capacity of each target time
 # we compute how many trajectories within a chunck are up to each worker
@@ -239,9 +236,6 @@ for i in 1:chunk_num
     chunk_start_time = time()  
     # we prepare the groups of trajectories per worker
     # sync: wait for each worker to finish its task
-    # lists to fill with the daemonic ergotropy and capacity evolutions of this chunk's trajectories
-    chunk_erg_results = Vector{Any}(undef, nworkers())
-    chunk_cap_results = Vector{Any}(undef, nworkers())
     # lists to fill with the single states ergotropy and capacity at target times of this chunk's trajectories
     chunk_erg_histo = Vector{Any}(undef, nworkers())
     chunk_cap_histo = Vector{Any}(undef, nworkers())
@@ -258,23 +252,13 @@ for i in 1:chunk_num
                     ρ = [[local_states[k][j] for k in 1:n_traj] for j in 1:NUMBER_OF_TIMEINTERVALS] # ρ[j] = list of states at time step j across this worker's trajectories
                     erg_histo_local = [map(ergotropy, ρ[j]) for j in target_indices]    # list of lists of the single states ergotropy at target times of the trajectories assigned to this worker
                     cap_histo_local = [map(capacity, ρ[j]) for j in target_indices]     # same for the capacity
-                    erg_local = map(av_ergotropy, ρ)    # daemonic ergotropy's evolutions of the trajectories assigned to this worker
-                    cap_local = map(av_capacity, ρ)     # same for the daemonic capacity
-                    # we return the list of the daemonic quantities weighted with respect to the fraction of the chunk's trajectories assigned to this worker
-                    return (n_traj .* erg_local ./ chunk_dim, n_traj .* cap_local ./ chunk_dim, erg_histo_local, cap_histo_local)
+                    return (erg_histo_local, cap_histo_local)
                 end
-                chunk_erg_results[w_idx] = result[1]    # each element of this list is the daemonic ergotropy evolution of the w_ixd-th worker
-                chunk_cap_results[w_idx] = result[2]    # same for the daemonic capacity
-                chunk_erg_histo[w_idx] = result[3]      # each element of this list is the list of the lists single states ergotropy at the given target times of the w_idx-th worker (workers -> target times -> number of trajectory assigned to the worker)
-                chunk_cap_histo[w_idx] = result[4]      # same for the capacity
+                chunk_erg_histo[w_idx] = result[1]      # each element of this list is the list of the lists single states ergotropy at the given target times of the w_idx-th worker (workers -> target times -> number of trajectory assigned to the worker)
+                chunk_cap_histo[w_idx] = result[2]      # same for the capacity
             end
         end
     end
-    
-    # aggregate results from all workers for this chunk
-
-    erg_chunk = sum(chunk_erg_results)
-    cap_chunk = sum(chunk_cap_results)
     
     # cycle over the target times: merge the histograms of all the workers
     for i_t in 1:length(target_times)
@@ -283,87 +267,21 @@ for i in 1:chunk_num
         global prog_cap_histo[i_t] = append!(prog_cap_histo[i_t], vcat([chunk_cap_histo[w][i_t] for w in 1:nworkers()]...))
     end
 
-    # aggregate the results of this chunk to the progressive sums of the daemonic quantities
-    if prog_erg_sum === nothing
-        global prog_erg_sum = erg_chunk
-        # print(erg_chunk)
-    else
-        global prog_erg_sum += erg_chunk
-        # print(erg_chunk)
-    end
-    if prog_cap_sum === nothing
-        global prog_cap_sum = cap_chunk
-    else
-        global prog_cap_sum += cap_chunk
-    end
-
     # run time of this chunk and progress printing
     chunk_end_time = time()
     global prog_time += chunk_end_time - chunk_start_time
     println(round(Int64(i * chunk_dim) / NUMBER_OF_TRAJECTORIES * 100, digits = 1), "%. Run time: ", round(prog_time, digits = 2), "s.")
 end
 
-
-# =============================================================================
-# 6. CENTRAL MOMENTA RECONSTRUCTION
-# =============================================================================
-
-# reconstruct central moments from raw moment accumulators E[X^n]
-erg_mean = [x[1] for x in prog_erg_sum] ./ chunk_num
-cap_mean = [x[1] for x in prog_cap_sum] ./ chunk_num
-erg_var  = [x[2] for x in prog_erg_sum] ./ chunk_num - erg_mean .^ 2
-cap_var  = [x[2] for x in prog_cap_sum] ./ chunk_num - cap_mean .^ 2
-erg_skw  = [x[3] for x in prog_erg_sum] ./ chunk_num - 3 .* erg_mean .* [x[2] for x in prog_erg_sum] ./ chunk_num + 2 .* erg_mean .^ 3
-cap_skw  = [x[3] for x in prog_cap_sum] ./ chunk_num - 3 .* cap_mean .* [x[2] for x in prog_cap_sum] ./ chunk_num + 2 .* cap_mean .^ 3
-
 end_time = time()
 println("Total run time: ", round(end_time - start_time, digits = 2), "s.")
 
 # =============================================================================
-# 7. RESULTS PRINTING
+# 6. RESULTS PRINTING
 # =============================================================================
 
 # printing results on files
 println("Printing results...")
-# --- mean values -------------------------------------------------------------
-open(processpath * "erg_" * unravelling * ".dat", "w") do io
-    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
-    for (t, erg) in zip(tlist, erg_mean)
-        @printf(io, "%.3f\t%.8f\n", t, erg)
-    end
-end
-open(processpath * "cap_" * unravelling * ".dat", "w") do io
-    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
-    for (t, cap) in zip(tlist, cap_mean)
-        @printf(io, "%.3f\t%.8f\n", t, cap)
-    end
-end
-# --- variances ---------------------------------------------------------------
-open(processpath * "var_erg_" * unravelling * ".dat", "w") do io
-    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
-    for (t, ergvar) in zip(tlist, erg_var)
-        @printf(io, "%.3f\t%.8f\n", t, ergvar)
-    end
-end
-open(processpath * "var_cap_" * unravelling * ".dat", "w") do io
-    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
-    for (t, capvar) in zip(tlist, cap_var)
-        @printf(io, "%.3f\t%.8f\n", t, capvar)
-    end
-end
-# --- skewnesses --------------------------------------------------------------
-open(processpath * "skw_erg_" * unravelling * ".dat", "w") do io
-    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
-    for (t, ergskw) in zip(tlist, erg_skw)
-        @printf(io, "%.3f\t%.8f\n", t, ergskw)
-    end
-end
-open(processpath * "skw_cap_" * unravelling * ".dat", "w") do io
-    println(io, "# NTRAJ\t", NUMBER_OF_TRAJECTORIES)
-    for (t, capskw) in zip(tlist, cap_skw)
-        @printf(io, "%.3f\t%.8f\n", t, capskw)
-    end
-end
 # --- ergotropy and capacity distributions ------------------------------------
 for (i_t, t) in enumerate(target_times)
     open(processpath * "histo_erg_" * unravelling * "_t$(t).dat", "w") do io

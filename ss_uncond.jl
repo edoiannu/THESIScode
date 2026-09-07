@@ -28,8 +28,6 @@
 include("my_library/my_objects.jl")
 using Printf    # to write on formatted files
 
-println("=== STEADY STATES OF THE UNCONDITIONAL DYNAMICS ===")
-
 # =============================================================================
 # 1. PARAMETERS READING
 # =============================================================================
@@ -101,7 +99,7 @@ mkpath("results/")
 # 4. SIMULATION
 # =============================================================================
 
-println("Steady states evolutions (", NUMBER_OF_ALPHAPOINTS, " α/κ points and ", NUMBER_OF_TIMEINTERVALS, " time intervals)...")
+println("Unconditional steady states ergotropy and energy computation (", NUMBER_OF_ALPHAPOINTS, " α/κ points and ", NUMBER_OF_TIMEINTERVALS, " time intervals)...")
 
 # lists to fill with the steady states ergotropy, capacity and energy
 ss_ergotropies = Float64[]

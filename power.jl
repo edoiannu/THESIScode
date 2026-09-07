@@ -47,6 +47,7 @@ end
 # =============================================================================
 
 # variables initialization
+# @__DIR__: macro that returns the absolute path of the current directory as a string
 inputfile = joinpath(@__DIR__, "input.dat")
 instate = nothing                   # single character variables that indicates the simulation's initial state
 α_val = nothing                     # driving field intensity over the system's emitting rate
@@ -85,8 +86,7 @@ for line in eachline(inputfile)
     end
 end
 
-# the run size (FINALT, dt and NTRAJ) is not read here: it is read in section 3,
-# either from params.dat (already existing process) or from input.dat (new one)
+# the run size (FINALT, dt and NTRAJ) is not read here: it is read in section 3, either from params.dat (already existing process) or from input.dat (new one)
 
 # =============================================================================
 # 2. CHECKS ON THE INPUT PARAMETERS AND INITIAL STATE
@@ -106,22 +106,25 @@ if η_val < 0 || η_val > 1
     error("The detection efficiency must be between 0 and 1.")
 end
 
+# check on chunk dimension
+if chunk_dim < nworkers()
+    error("Chunk dimension must be larger than the number of workers.")
+end
+
 # =============================================================================
 # 3. OUTPUT FOLDER AND RUN SIZE CHECK
 # =============================================================================
 
-# string that identifies the input simulation's parameters
+# string that identifies the input simulation's parameters of the considered process
+# the parameters that identify a process are: the initial state, the detection efficiency η and the driving field intensity over the system's emitting rate α/κ
 inputstring = instate * "_eta" * string(η_val) * "_alpha" * string(α_val)
 # path where to save the simulation's results
 processpath = joinpath(@__DIR__, "results/" * inputstring * "/powers/")
 mkpath(processpath)
 
 # --- run size of a possible previous simulation ------------------------------
-# params.dat stores the number of trajectories, the final time and the time step
-# actually used to produce the data contained in this folder: it is the file the
-# plotting scripts have to read, so that they no longer depend on input.dat
-# (which may have been modified after the simulation)
-# same reading scheme used above for input.dat
+# params.dat stores the number of trajectories, the final time and the time step actually used to produce the data contained in this folder: it is the file the plotting scripts have to read, so that they no longer depend on input.dat (which may have been modified after the simulation) same reading scheme used above for input.dat
+# if a given process already exists
 if isfile(joinpath(processpath, "params.dat"))
     for line in eachline(joinpath(processpath, "params.dat"))
         parts = split(line)
@@ -138,6 +141,7 @@ if isfile(joinpath(processpath, "params.dat"))
         end
     end
     global NUMBER_OF_TIMEINTERVALS = Int64(t_f / deltat)
+# if instead a new process has been defined
 else
     for line in eachline(inputfile)
         # to split line's elements
@@ -205,18 +209,20 @@ global Elimit = range(0.0, MAXthreshold, Nthresholds)
         power_ev = Vector{Float64}(undef, NUMBER_OF_TIMEINTERVALS)      # power evolution with time
         thr_powers  = zeros(Float64, $Nthresholds)                      # power evolution with thresholds (initialized with Nthreshold zeros)
         thr_reached = falses($Nthresholds)                              # which threshold have been reached from this trajectory
-        thr_powers[Eidx] = 0.0
-        thr_reached[Eidx] = true
+        thr_powers[Eidx] = 0.0                                          # the first threshold power is set to zero
+        thr_reached[Eidx] = true                                        # the first ergotropy threshold is reached
         for i in 1:NUMBER_OF_TIMEINTERVALS
             t = tlist[i]
             ρ_tdt = ($det_type == "pd" ? photodet_kraus(HS(α_over_κ), ρ_t, cops, η) : dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne))
             erg = ergotropy(ρ_tdt)      # ergotropy for the state at time t + dt
             power = erg / (t + dt)      # ergotropic power for the state at time t + dt
-            # updating power's evolution
-            power_ev[i] = power
-            # updating threshold powers
+            power_ev[i] = power         # updating power's evolution
+            # loop over the ergotropy threshold
+            # it starts from the first unreached threshold 
             for j in (Eidx+1):$Nthresholds
+                # if the ergotropy overcomes the j-th threshold
                 if erg >= $Elimit[j]
+                    # updating threshold powers
                     thr_powers[j] = power
                     thr_reached[j] = true
                     Eidx = j
@@ -226,6 +232,7 @@ global Elimit = range(0.0, MAXthreshold, Nthresholds)
             end
             ρ_t = ρ_tdt
         end
+        # loop that updates the power of the unreached thesholds with the steady-state power
         for i in 1:$Nthresholds
             if !thr_reached[i]
                 thr_powers[i] = power_ev[end]
@@ -251,7 +258,7 @@ end
 # 5. SIMULATION
 # =============================================================================
 
-println("System's power evolution (initial ", instate, " state, α/κ = ", α_val, ", η = ", η_val, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " number of trajectories)...")
+println("System's power evolution against time and ergotropy threshold (", unravelling, ", initial ", instate, " state, α/κ = ", α_val, ", η = ", η_val, ", ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " number of trajectories)...")
 
 prog_time = 0                                           # progressive run time
 start_time = time()                                     # initial run time
@@ -274,7 +281,6 @@ for i in 1:chunk_num
     # workers -> (accumulated power time evolution/accumulated power threshold evolution/number of trajectories that reach the threshold within a worker)
     chunk_powers_time = Vector{Any}(undef, nworkers())
     chunk_powers_thre = Vector{Any}(undef, nworkers())
-    # chunk_counts_thre = Vector{Any}(undef, nworkers())
     # we prepare the groups of trajectories per worker
     # sync: wait for each worker to finish its task
     @sync begin

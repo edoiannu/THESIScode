@@ -87,7 +87,7 @@ mkpath(processpath)
 # 4. UNCONDITIONAL EVOLUTION AND COMPUTATION OF THE QUANTITIES
 # =============================================================================
 
-println("System evolution (initial ", instate, " state, α/κ = ", α_over_κ, " and ", NUMBER_OF_TIMEINTERVALS, " time intervals)...")
+println("Unconditional ergotropy, energy and power evolution (initial ", instate, " state, α/κ = ", α_over_κ, " and ", NUMBER_OF_TIMEINTERVALS, " time intervals)...")
 
 # unconditional dynamics of the system
 states = uncond_evo(HS(α_over_κ), ρ_0, tlist, σ_m)

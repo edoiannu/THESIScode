@@ -1,6 +1,6 @@
 # =============================================================================
 # === STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT ===================
-# === TO A CONTINUOUS PHOTO-DETECTION =========================================
+# === TO A CONTINUOUS MEASUREMENT =============================================
 # =============================================================================
 #
 # Structure of the file:
@@ -22,7 +22,28 @@ using Printf        # to write on formatted files
 using Distributed   # for parallel computing
 using JLD2          # to print trajectories on a file
 
-println("=== STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOUS PHOTO-DETECTION ===")
+# preliminar control over arguments number
+if length(ARGS) < 1 || length(ARGS) > 2
+    error("Type considered unravelling: {pd, hod [detection_angle], hed}")
+end
+
+# reading the unravelling from terminal
+global det_type = ARGS[1]
+if det_type == "pd"
+    const unravelling = det_type
+    const ϕ_val = 0     # dummy value: ϕ is irrelevant for photo.detection and heterodyne detection, but must be defined to avoid errors
+    const het_val = false
+elseif det_type == "hod"
+    const ϕ_val = parse(Int64, ARGS[2])
+    const unravelling = det_type * ARGS[2]
+    const het_val = false
+elseif det_type == "hed"
+    const ϕ_val = 0    
+    const unravelling = det_type     
+    const het_val = true
+else
+    error("Detection type must be photo-detection ('pd'), homodyne ('hod') or heterodyne ('hed').")
+end
 
 # =============================================================================
 # 1. PARAMETERS READING
@@ -30,7 +51,6 @@ println("=== STEADY STATES DYNAMICS SIMULATION OF A SYSTEM SUBJECT TO A CONTINOU
 
 # variables initialization
 inputfile = joinpath(@__DIR__, "input.dat") # name of the file from which we read the simulation's parameters
-unravelling = nothing                       # type of unravveling
 instate = nothing                           # single character variable that indicates the simulation's initial state
 ρ_0 = nothing                               # initial state 
 η_val = nothing                             # detection efficiency value
@@ -94,7 +114,7 @@ end
 # =============================================================================
 
 # process name generation
-process = "pd_eta" * string(η_val)  # process name
+process = unravelling * "_eta" * string(η_val)  # process name
 # the steady states mix several α/κ values, so they do not belong to a single
 # process folder: they are written in the results' root
 mkpath(joinpath(@__DIR__, "results/"))
@@ -110,6 +130,8 @@ mkpath(joinpath(@__DIR__, "results/"))
 
     # constants definition for each core
     η = $η_val
+    heterodyne = $het_val
+    ϕ = $ϕ_val
     c = σ_m         # collapse operator
     finalt = $t_f
     dt = $deltat
@@ -118,13 +140,21 @@ mkpath(joinpath(@__DIR__, "results/"))
     NUMBER_OF_TIMEINTERVALS = Int64(finalt / dt)           # number of time intervals
     tlist = range(0, finalt, NUMBER_OF_TIMEINTERVALS + 1)  # list of time intervals ("+ 1" because it starts with t=0)
 
+    clean(x; tol = 1e-14) = abs(x) < tol ? 0 : x    # to set at zero "numerical zeros"
+    # collapse operator definition
+    if $det_type == "hod"
+        const cops = (clean(cos(deg2rad(ϕ))) + 1im * sin(deg2rad(ϕ))) * c
+    else
+        const cops = c
+    end
+
     # pevolution function definition: it evolves a single trajectory and returns
     # only its final (steady) state
     function pevolution(α_over_κ)
         ρ_t = ρ0   # initial state at time t=0
         ρ_tdt = nothing
         for i in tlist
-            ρ_tdt = photodet_kraus(HS(α_over_κ), ρ_t, σ_m, η)
+            ρ_tdt = ($det_type == "pd" ? photodet_kraus(HS(α_over_κ), ρ_t, cops, η) : dyne_kraus(HS(α_over_κ), ρ_t, cops, η, heterodyne))
             ρ_t = ρ_tdt
         end
         return ρ_tdt
@@ -135,7 +165,7 @@ end
 # 5. SIMULATION
 # =============================================================================
 
-println("Steady states evolutions (η = ", η, ", ", NUMBER_OF_ALPHAPOINTS, " α/κ points, ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " trajectories)...")
+println("Steady states daemonic ergotropy computation (", unravelling, ", η = ", η, ", ", NUMBER_OF_ALPHAPOINTS, " α/κ points, ", NUMBER_OF_TIMEINTERVALS, " time intervals and ", NUMBER_OF_TRAJECTORIES, " trajectories)...")
 
 dα = Float64(α_f / NUMBER_OF_ALPHAPOINTS)           # α/κ interval width
 αlist = range(0, α_f, NUMBER_OF_ALPHAPOINTS + 1)    # list of α/κ values
