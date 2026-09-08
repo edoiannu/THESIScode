@@ -7,7 +7,7 @@
 # Structure of the file:
 #   1. Parameters reading from the input file
 #   2. Checks on the input parameters and initial state definition
-#   3. Output folder, run size check (params.dat) and its writing
+#   3. Output folder, run size check (_params.dat) and its writing
 #   4. Workers initialization
 #   5. Simulation over the chunks of trajectories
 #   6. Averages computation
@@ -86,7 +86,7 @@ for line in eachline(inputfile)
     end
 end
 
-# the run size (FINALT, dt and NTRAJ) is not read here: it is read in section 3, either from params.dat (already existing process) or from input.dat (new one)
+# the run size (FINALT, dt and NTRAJ) is not read here: it is read in section 3, either from _params.dat (already existing process) or from input.dat (new one)
 
 # =============================================================================
 # 2. CHECKS ON THE INPUT PARAMETERS AND INITIAL STATE
@@ -123,10 +123,10 @@ processpath = joinpath(@__DIR__, "results/" * inputstring * "/powers/")
 mkpath(processpath)
 
 # --- run size of a possible previous simulation ------------------------------
-# params.dat stores the number of trajectories, the final time and the time step actually used to produce the data contained in this folder: it is the file the plotting scripts have to read, so that they no longer depend on input.dat (which may have been modified after the simulation) same reading scheme used above for input.dat
+# _params.dat stores the number of trajectories, the final time and the time step actually used to produce the data contained in this folder: it is the file the plotting scripts have to read, so that they no longer depend on input.dat (which may have been modified after the simulation) same reading scheme used above for input.dat
 # if a given process already exists
-if isfile(joinpath(processpath, "params.dat"))
-    for line in eachline(joinpath(processpath, "params.dat"))
+if isfile(joinpath(processpath, "_params.dat"))
+    for line in eachline(joinpath(processpath, "_params.dat"))
         parts = split(line)
         if isempty(line) || startswith(line, "#")
             continue
@@ -161,7 +161,7 @@ else
     end
     global NUMBER_OF_TIMEINTERVALS = Int64(t_f / deltat)
     # write on processpath the number of trajectories, the final time and the time step
-    open(joinpath(processpath, "params.dat"), "w") do io
+    open(joinpath(processpath, "_params.dat"), "w") do io
         println(io, "# SIMULATION PARAMETERS USED TO PRODUCE THE DATA IN THIS FOLDER")
         println(io, "NTRAJ\t", NUMBER_OF_TRAJECTORIES)
         println(io, "FINALT\t", t_f)
