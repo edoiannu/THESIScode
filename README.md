@@ -24,10 +24,8 @@ The term "daemonic" refers to the ergotropy averaged over the individual traject
 | `ss_uncond.jl` | **Unconditional steady states**: repeats the unconditional evolution over a grid of `α/κ` values and saves only the final state (reference upper/lower bounds for the conditional case). |
 | `daemonic_ergotropy.jl` | **Conditional** evolution (Monte Carlo over quantum trajectories, parallelized with `Distributed`): computes mean, variance and skewness of daemonic ergotropy and capacity as a function of time, for a given `α/κ`, `η` and unravelling type. |
 | `ss_daemonic_erg.jl` | **Conditional steady states**: like `daemonic_ergotropy.jl`, but evaluates only the final (steady-state) trajectory outcome over a grid of `α/κ` values. |
-| `power.jl` | Average **ergotropic power**, computed both as a function of time and as a function of an energy threshold, over a set of conditional trajectories. |
+| `power.jl` | Average **ergotropic power**, computed both as a function of time over a set of conditional trajectories, and as a function of ergotropy thresholds reached by each trajectory in a feedback-assisted charging protocol that halts the battery's charging as soon as a given threshold is reached. |
 | `daemonic_erg_distribution.jl` | **Distribution** (histogram) of the ergotropy/capacity values of individual trajectories at given time instants (`HISTOTIME`). |
-
-The scripts that use parallel computing (`daemonic_ergotropy.jl`, `ss_daemonic_erg.jl`, `power.jl`, `daemonic_erg_distribution.jl`) expect `my_objects.jl` to be located in a `my_library/` subfolder relative to the script's own location (see `include(joinpath(@__DIR__, "my_library/my_objects.jl"))`).
 
 ## Requirements
 
@@ -35,30 +33,7 @@ The scripts that use parallel computing (`daemonic_ergotropy.jl`, `ss_daemonic_e
 - Standard packages: `LinearAlgebra`, `Printf`, `Distributed`
 - Additional package: `JLD2` (used by the parallel scripts)
 
-Package installation (from the Julia REPL):
-
-```julia
-using Pkg
-Pkg.add(["JLD2"])
-```
-
 `LinearAlgebra`, `Printf` and `Distributed` are part of Julia's standard library.
-
-## Expected folder structure
-
-```
-project/
-├── my_library/
-│   └── my_objects.jl
-├── input.dat
-├── uncond.jl
-├── ss_uncond.jl
-├── daemonic_ergotropy.jl
-├── ss_daemonic_erg.jl
-├── power.jl
-├── daemonic_erg_distribution.jl
-└── results/            # created automatically by the scripts
-```
 
 ## Input file: `input.dat`
 
@@ -145,9 +120,9 @@ Results are written to `results/`, in subfolders named according to the initial 
 - `avepower_<unravelling>_against_time.dat`, `avepower_<unravelling>_against_energy_threshold.dat` — average ergotropic power
 - `histo_erg_<unravelling>_t<t>.dat`, `histo_cap_<unravelling>_t<t>.dat` — samples for the ergotropy/capacity histograms at a given time instant
 
-Each process folder also contains a `_params.dat` file (or `params.dat` for `power.jl`) that records the parameters actually used to generate the data (number of trajectories, final time, time step), so that plotting scripts do not depend on later modifications of `input.dat`.
+Each process folder also contains a `_params.dat` file that records the parameters actually used to generate the data (number of trajectories, final time, time step), so that plotting scripts do not depend on later modifications of `input.dat`.
 
 ## Notes
 
-- The parallel scripts reuse existing data: if a process folder already exists with a `_params.dat`/`params.dat` file, the run size (`FINALT`, `dt`, `NTRAJ`) is read from there instead of from `input.dat`, to ensure consistency with the data already present.
+- The parallel scripts reuse existing data: if a process folder already exists with a `_params.dat` file, the run size (`FINALT`, `dt`, `NTRAJ`) is read from there instead of from `input.dat`, to ensure consistency with the data already present.
 - The number of trajectories (`NTRAJ`) must be a multiple of `CHUNKDIM`, and `CHUNKDIM` must be greater than or equal to the number of active workers.
