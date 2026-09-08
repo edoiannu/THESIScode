@@ -1,295 +1,153 @@
-# Daemonic ergotropy computation for a monitored open quantum system
+# Daemonic Ergotropy in a Continuously Monitored Qubit
 
-## Overview
+Julia code to simulate the dynamical evolution of a qubit (two-level system, driven by a resonant field and subject to decay) and to compute **ergotropy**, **capacity**, **energy** and **ergotropic power**, both for the unconditional evolution (master equation) and for the case of continuous monitoring (conditional quantum trajectories: photodetection, homodyne, heterodyne).
 
-This repository contains Julia implementations for thesis research on quantum thermodynamics, specifically how much work can be extracted from an open quantum systems (ergotropy), performing or not[...]
+The term "daemonic" refers to the ergotropy averaged over the individual trajectories conditioned by the continuous measurement (in analogy with Maxwell's demon: the information gained from monitoring makes it possible to extract more work than in the unconditional case).
 
-### Key Research Areas
+## Physical model
 
-- **Ergotropy**: Maximum work extractable from an open quantum system, whose unconditional evolution is governed by the Markovian Master Equation (MME).
-- **Daemonic ergotropy**: Exploiting the correlations of an open quantum system to overcome the ergotropy bound, through performing projective measurement on the environment: photodetection (PD).
-- **Second and third moments analysis**: Statistical characterization of the daemonic ergotropy beyond the mean - we compute the second (variance) and third moments across trajectories to quantify fluctuations of the distribution.
-- **Distribution snapshots**: Full probability distributions of daemonic ergotropy and capacity at selected times are generated.
-- **Steady-State Analysis**: Long-time behavior of the (daemonic) ergotropy under the measurement protocols mentioned above.
+- System: qubit with free Hamiltonian `H0 = ω₀/2 (σ_z + I)`, with `ω₀ = 1` (energies in units of `ω₀`).
+- Driving: coherent term `HS(α/κ) = (α/κ) σ_x`, where `α/κ` is the pump field intensity normalized to the emission rate `κ`.
+- Dissipation/measurement: collapse operator `σ₋` (spontaneous decay), with a Lindblad equation for the unconditional dynamics.
+- The code works in rescaled units (`α → α/κ`, `t → κt`, `√κ c → c`), as stated at the top of `my_objects.jl`.
+- Three types of continuous monitoring ("unravelling") are supported:
+  - `pd` — photodetection
+  - `hod [angle]` — homodyne, with detection angle in degrees
+  - `hed` — heterodyne
 
-## System Model
+## File structure
 
-The simulations study a **driven-dissipative quantum two-level system** ruled the Hamiltonian:
+| File | Role |
+|---|---|
+| `my_objects.jl` | **Core library** (must be included by all scripts, typically as `my_library/my_objects.jl`). Defines the Pauli matrices, the Hamiltonian, the Lindblad/Kraus operators for unconditional and conditional evolution (photodetection and dyne-detection), and the functions `ergotropy`, `capacity`, `energy`, `av_ergotropy`, `av_capacity`. |
+| `uncond.jl` | **Unconditional** evolution (master equation): computes ergotropy, capacity, energy and power as a function of time for a given initial state and `α/κ`. Reads parameters from `input.dat`. |
+| `ss_uncond.jl` | **Unconditional steady states**: repeats the unconditional evolution over a grid of `α/κ` values and saves only the final state (reference upper/lower bounds for the conditional case). |
+| `daemonic_ergotropy.jl` | **Conditional** evolution (Monte Carlo over quantum trajectories, parallelized with `Distributed`): computes mean, variance and skewness of daemonic ergotropy and capacity as a function of time, for a given `α/κ`, `η` and unravelling type. |
+| `ss_daemonic_erg.jl` | **Conditional steady states**: like `daemonic_ergotropy.jl`, but evaluates only the final (steady-state) trajectory outcome over a grid of `α/κ` values. |
+| `power.jl` | Average **ergotropic power**, computed both as a function of time and as a function of an energy threshold, over a set of conditional trajectories. |
+| `daemonic_erg_distribution.jl` | **Distribution** (histogram) of the ergotropy/capacity values of individual trajectories at given time instants (`HISTOTIME`). |
 
-$$ H_0 = \frac{\omega_0}{2} (\sigma_z + 1) $$
+The scripts that use parallel computing (`daemonic_ergotropy.jl`, `ss_daemonic_erg.jl`, `power.jl`, `daemonic_erg_distribution.jl`) expect `my_objects.jl` to be located in a `my_library/` subfolder relative to the script's own location (see `include(joinpath(@__DIR__, "my_library/my_objects.jl"))`).
 
-- **Parameters**:
-  - `α/κ`: Ratio of driving field intensity to spontaneous emission rate
-  - `η`: Detection efficiency $[0,1]$
-  - Initial state: Pure (ground state $\ket{0}$) or maximally mixed ($\mathbb{1}/2$)
+## Requirements
 
-- **Measurement Types**:
-  - **PD** (Photo-detection): Direct photon counting
-  - **HoD** (Homodyne detection): Measurement at a specific detection angle φ
-  - **HeD** (Heterodyne detection): Simultaneous measurement of orthogonal quadratures
+- **Julia** (≥ 1.6 or so, tested with standard syntax from recent versions)
+- Standard packages: `LinearAlgebra`, `Printf`, `Distributed`
+- Additional package: `JLD2` (used by the parallel scripts)
 
-## Project Structure
+Package installation (from the Julia REPL):
 
-```
-THESIScode/
-├── daemonic_erg_distribution.jl    # Distribution analysis of ergotropy across trajectories at specific times
-├── daemonic_ergotropy.jl           # Temporal evolution of mean ergotropy and moments
-├── power.jl                         # Ergotropic power: work extraction rate vs time and energy threshold
-├── uncond.jl                        # Unconditional (master equation) evolution
-├── ss_daemonic_erg.jl              # Steady-state ergotropy across α/κ parameter space
-├── ss_uncond.jl                    # Steady-state unconditional dynamics across α/κ parameter space
-├── input.dat                        # Configuration file for all simulations
-├── my_library/                      # Custom library functions (quantum operators and evolution)
-└── results/                         # Output directory for simulation results
-```
-
-## Detailed File Descriptions
-
-### Main Simulation Scripts
-
-#### **daemonic_ergotropy.jl**
-**Purpose**: Computes temporal evolution of daemonic ergotropy and capacity averaged over many trajectories, including statistical moments (mean, variance, skewness).
-
-**Functionality**:
-1. Reads parameters from `input.dat` (initial state, detection efficiency η, driving field α/κ)
-2. Launches parallel computation across multiple CPU workers
-3. Each worker evolves multiple quantum trajectories using stochastic Kraus operators:
-   - For photo-detection: `photodet_kraus()` 
-   - For homodyne/heterodyne: `dyne_kraus()`
-4. For each trajectory evolution, computes:
-   - Ergotropy at each time step: `ergotropy(ρ)`
-   - Capacity at each time step: `capacity(ρ)`
-   - Raw moments: E[X¹], E[X²], E[X³]
-5. Reconstructs central moments (variance, skewness) from raw moments
-6. Outputs mean, variance, and skewness time-evolution for ergotropy and capacity
-
-**Outputs** (in `results/{initial_state}_eta{η}_alpha{α}/`):
-- `erg_{detection_type}.dat`: Mean ergotropy vs time
-- `cap_{detection_type}.dat`: Mean capacity vs time
-- `var_erg_{detection_type}.dat`: Variance of ergotropy vs time
-- `var_cap_{detection_type}.dat`: Variance of capacity vs time
-- `skw_erg_{detection_type}.dat`: Skewness of ergotropy vs time
-- `skw_cap_{detection_type}.dat`: Skewness of capacity vs time
-
-#### **daemonic_erg_distribution.jl**
-**Purpose**: Captures full statistical distributions of ergotropy and capacity at selected time snapshots.
-
-**Functionality**:
-1. Similar parallel trajectory evolution as `daemonic_ergotropy.jl`
-2. Instead of computing moments, stores individual ergotropy/capacity values at target times
-3. Specified snapshot times in `input.dat` via `HISTOTIME` parameter
-4. Generates histograms (raw data) for each snapshot time
-
-**Outputs** (in `results/{initial_state}_eta{η}_alpha{α}/`):
-- `histo_erg_{detection_type}_t{T}.dat`: All ergotropy values at time T
-- `histo_cap_{detection_type}_t{T}.dat`: All capacity values at time T
-
-These can be used to plot probability distributions and visualize how distributions evolve.
-
-#### **power.jl**
-**Purpose**: Analyzes extractable power (work per unit time) and how it varies with energy thresholds.
-
-**Functionality**:
-1. Evolves trajectories and computes ergotropic power at each time: `power = ergotropy / time`
-2. Tracks energy thresholds: determines the time when each trajectory first crosses an ergotropy threshold
-3. Records power value at threshold crossing
-4. Computes averages across all trajectories
-5. Produces two complementary views:
-   - Power evolution with time
-   - Power evolution with respect to energy thresholds
-
-**Outputs** (in `results/{initial_state}_eta{η}_alpha{α}/powers/`):
-- `avepower_{detection_type}_against_time.dat`: Average power vs time
-- `avepower_{detection_type}_against_energy_threshold.dat`: Average power vs ergotropy threshold
-
-#### **uncond.jl**
-**Purpose**: Computes unconditional (ensemble-averaged) dynamics using the master equation, providing lower bounds for all daemonic quantities.
-
-**Functionality**:
-1. No trajectory sampling - uses deterministic master equation evolution
-2. Evolves a single averaged density matrix via `uncond_evo()`
-3. Applies Lindblad master equation with spontaneous emission as dissipation
-4. Computes for each time step:
-   - Ergotropy
-   - Capacity
-   - Energy (expectation value of system Hamiltonian)
-   - Power: energy/time
-   - Ergotropic power: ergotropy/time
-5. Independent of detection efficiency η (measures full ensemble)
-
-**Outputs** (in `results/`):
-- `erg_unc_{initial_state}_alpha{α}.dat`: Unconditional ergotropy vs time
-- `cap_unc_{initial_state}_alpha{α}.dat`: Unconditional capacity vs time
-- `en_unc_{initial_state}_alpha{α}.dat`: Unconditional energy vs time
-- `pw_unc_{initial_state}_alpha{α}.dat`: Unconditional power vs time
-- `erg_pw_unc_{initial_state}_alpha{α}.dat`: Unconditional ergotropic power vs time
-
-#### **ss_daemonic_erg.jl**
-**Purpose**: Maps steady-state daemonic ergotropy and capacity as functions of the driving field strength α/κ.
-
-**Functionality**:
-1. Scans across α/κ values (from 0 to `FINALALPHA` in `ALPHAPOINTS` steps)
-2. For each α/κ value:
-   - Evolves multiple trajectories for full simulation time
-   - Keeps only final state (steady state)
-   - Averages ergotropy and capacity across trajectories
-3. Shows how measurement feedback affects steady-state work extractability at different driving strengths
-
-**Outputs** (in `results/`):
-- `ss_erg_{detection_type}_eta{η}.dat`: Steady-state daemonic ergotropy vs α/κ
-- `ss_cap_{detection_type}_eta{η}.dat`: Steady-state daemonic capacity vs α/κ
-
-#### **ss_uncond.jl**
-**Purpose**: Maps steady-state unconditional ergotropy, capacity, and energy as functions of α/κ, providing upper bounds.
-
-**Functionality**:
-1. Scans α/κ values (same parameter space as `ss_daemonic_erg.jl`)
-2. For each α/κ:
-   - Evolves unconditional (master equation) state to convergence
-   - Checks convergence by comparing successive states
-3. Provides reference values for comparison with daemonic results
-
-**Outputs** (in `results/`):
-- `ss_erg_unc.dat`: Steady-state unconditional ergotropy vs α/κ
-- `ss_cap_unc.dat`: Steady-state unconditional capacity vs α/κ
-- `ss_en_unc.dat`: Steady-state unconditional energy vs α/κ
-
-## Configuration File (input.dat)
-
-All simulations read parameters from `input.dat`:
-
-```
-# Process Parameters
-INSTATE         p              # Initial state: p (pure ground) or m (maximally mixed)
-ALPHA           1.0            # Driving field / emission rate (α/κ)
-ETA             0.1            # Detection efficiency (0-1)
-
-# Simulation Parameters
-FINALT          10             # Final evolution time
-dt              0.01           # Time step
-NTRAJ           500            # Number of trajectories (for trajectory simulations)
-
-# Parallel Computing
-CHUNKDIM        100            # Trajectories per chunk (split across workers)
-
-# Steady-State Scans
-FINALALPHA      2              # Maximum α/κ value for steady-state scans
-ALPHAPOINTS     50             # Number of α/κ points
-
-# Distribution Snapshots
-HISTOTIME       0.5 1.5 2.5 7.5   # Times for ergotropy distribution snapshots
-
-# Power Analysis
-NTHRESHOLDS     1000           # Number of energy thresholds
-MAXTHRESHOLD    1.0            # Maximum threshold value
+```julia
+using Pkg
+Pkg.add(["JLD2"])
 ```
 
-## Running the Simulations
+`LinearAlgebra`, `Printf` and `Distributed` are part of Julia's standard library.
 
-### Prerequisites
-- Julia 1.x or higher
-- Quantum computing libraries in `my_library/my_objects.jl` (custom implementations)
+## Expected folder structure
 
-### Basic Usage
+```
+project/
+├── my_library/
+│   └── my_objects.jl
+├── input.dat
+├── uncond.jl
+├── ss_uncond.jl
+├── daemonic_ergotropy.jl
+├── ss_daemonic_erg.jl
+├── power.jl
+├── daemonic_erg_distribution.jl
+└── results/            # created automatically by the scripts
+```
 
-**Unconditional evolution** (deterministic, single-threaded):
+## Input file: `input.dat`
+
+All scripts read parameters from an `input.dat` file located in the same folder as the script (`KEY value` format; empty lines and lines starting with `#` are ignored). The full set of keys used across the scripts is:
+
+| Key | Meaning | Used by |
+|---|---|---|
+| `INSTATE` | Initial state: `p` (pure, ground state) or `m` (maximally mixed) | all |
+| `ALPHA` | Single value of `α/κ` | `uncond.jl`, `daemonic_ergotropy.jl`, `power.jl`, `daemonic_erg_distribution.jl` |
+| `FINALALPHA` | Maximum `α/κ` value in the scan | `ss_uncond.jl`, `ss_daemonic_erg.jl` |
+| `ALPHAPOINTS` | Number of points in the `α/κ` scan | `ss_uncond.jl`, `ss_daemonic_erg.jl` |
+| `ETA` | Detection efficiency `η ∈ [0,1]` | scripts with conditional dynamics |
+| `FINALT` | Final simulation time | all |
+| `dt` | Time step | all |
+| `NTRAJ` | Number of Monte Carlo trajectories | scripts with conditional dynamics |
+| `CHUNKDIM` | Number of trajectories evolved simultaneously per "chunk" (must be ≥ number of workers) | scripts with conditional dynamics |
+| `NTHRESHOLDS` | Number of energy thresholds | `power.jl` |
+| `MAXTHRESHOLD` | Maximum energy threshold | `power.jl` |
+| `HISTOTIME` | List of time instants at which to build the histogram (multiple values on the same line) | `daemonic_erg_distribution.jl` |
+
+Minimal `input.dat` example:
+
+```
+# initial state and system parameters
+INSTATE p
+ALPHA 1.0
+ETA 0.8
+FINALT 10.0
+dt 0.001
+NTRAJ 10000
+CHUNKDIM 500
+```
+
+## Running the scripts
+
+### Unconditional evolution
+
 ```bash
 julia uncond.jl
+```
+
+### Unconditional steady states
+
+```bash
 julia ss_uncond.jl
 ```
 
-**Conditional (trajectory) evolution** (requires detection type argument):
+### Daemonic ergotropy (conditional dynamics, parallel)
+
 ```bash
-# Photo-detection
-julia daemonic_ergotropy.jl pd
-julia daemonic_erg_distribution.jl pd
-julia power.jl pd
-julia ss_daemonic_erg.jl pd
-
-# Homodyne detection at 45° phase angle
-julia daemonic_ergotropy.jl hod 45
-julia ss_daemonic_erg.jl hod 45
-
-# Heterodyne detection
-julia daemonic_ergotropy.jl hed
-julia ss_daemonic_erg.jl hed
+julia -p N daemonic_ergotropy.jl pd            # photodetection
+julia -p N daemonic_ergotropy.jl hod 45        # homodyne, 45° angle
+julia -p N daemonic_ergotropy.jl hed           # heterodyne
 ```
 
-**Parallel Execution** (enable multiple CPU cores):
+where `N` is the number of Julia workers to start (`-p N`). The same command-line argument scheme (`pd`, `hod <angle>`, `hed`) applies to `ss_daemonic_erg.jl`, `power.jl` and `daemonic_erg_distribution.jl`.
+
+### Daemonic steady states
+
 ```bash
-julia -p auto daemonic_ergotropy.jl pd      # Use all available cores
-julia -p 4 daemonic_ergotropy.jl hod 45    # Use 4 cores
+julia -p N ss_daemonic_erg.jl pd
 ```
 
-## Output Analysis
+### Ergotropic power
 
-Results are organized hierarchically:
-
-```
-results/
-├── p_eta0.1_alpha1.0/              # Process folder (one per unique instate, η, α combination)
-│   ├── _params.dat                 # Simulation parameters used
-│   ├── erg_pd.dat                  # Photo-detection ergotropy mean
-│   ├── var_erg_pd.dat              # Photo-detection ergotropy variance
-│   ├── skw_erg_pd.dat              # Photo-detection ergotropy skewness
-│   ├── histo_erg_pd_t0.5.dat       # Ergotropy distribution at t=0.5
-│   ├── powers/
-│   │   ├── avepower_pd_against_time.dat
-│   │   └── avepower_pd_against_energy_threshold.dat
-│   └── [other detection types...]
-│
-├── ss_erg_pd_eta0.1.dat            # Steady-state daemonic ergotropy vs α/κ
-├── ss_cap_pd_eta0.1.dat            # Steady-state daemonic capacity vs α/κ
-├── ss_erg_unc.dat                  # Steady-state unconditional ergotropy vs α/κ
-├── ss_cap_unc.dat                  # Steady-state unconditional capacity vs α/κ
-└── ...
+```bash
+julia -p N power.jl hod 0
 ```
 
-## Computational Details
+### Daemonic ergotropy distribution
 
-### Parallel Architecture
+```bash
+julia -p N daemonic_erg_distribution.jl hed
+```
 
-- Uses Julia's `Distributed` package for multi-core parallelism
-- **Chunk-based processing**: Trajectories divided into chunks, each processed by worker pool
-- **Work distribution**: Each worker receives `CHUNKDIM/nworkers()` trajectories
-- Benefits: Better load balancing and reduced memory per worker
+## Output
 
-### Quantum Evolution
+Results are written to `results/`, in subfolders named according to the initial state, `η` and `α/κ` (e.g. `results/p_eta0.8_alpha1.0/`). The produced `.dat` files contain tab-separated columns (time/threshold/α and value); among them:
 
-- **Kraus operators**: Uses completely positive maps for open quantum system evolution
-- **Detection types**:
-  - Photo-detection: Projects onto detected/not-detected subspaces
-  - Homodyne: Measures quadrature at angle φ, collapses accordingly
-  - Heterodyne: Measures both quadratures simultaneously
+- `erg_unc_*.dat`, `cap_unc_*.dat`, `en_unc_*.dat`, `pw_unc_*.dat`, `erg_pw_unc_*.dat` — unconditional evolution
+- `ss_erg_unc.dat`, `ss_cap_unc.dat`, `ss_en_unc.dat` — unconditional steady states
+- `erg_<unravelling>.dat`, `cap_<unravelling>.dat`, `var_erg_*.dat`, `var_cap_*.dat`, `skw_erg_*.dat`, `skw_cap_*.dat` — mean, variance and skewness of daemonic ergotropy/capacity
+- `ss_erg_<unravelling>_eta<η>.dat`, `ss_cap_<unravelling>_eta<η>.dat` — daemonic steady states as a function of `α/κ`
+- `avepower_<unravelling>_against_time.dat`, `avepower_<unravelling>_against_energy_threshold.dat` — average ergotropic power
+- `histo_erg_<unravelling>_t<t>.dat`, `histo_cap_<unravelling>_t<t>.dat` — samples for the ergotropy/capacity histograms at a given time instant
 
-### Numerical Convergence
+Each process folder also contains a `_params.dat` file (or `params.dat` for `power.jl`) that records the parameters actually used to generate the data (number of trajectories, final time, time step), so that plotting scripts do not depend on later modifications of `input.dat`.
 
-- Master equation convergence checked in `ss_uncond.jl` via residual between final states
-- Time step `dt` must be small enough for accuracy (typically 0.001-0.1)
-- Sufficient trajectories needed for statistical convergence (typically 500-10000)
+## Notes
 
-## Physics Interpretation
-
-The project compares three measurement scenarios:
-
-1. **Daemonic (Conditional)**: What quantum systems do when we measure and select specific outcomes
-2. **Unconditional (Ensemble)**: Average behavior across all possible measurement outcomes
-3. **No Measurement** (implicitly): Reference case with just driving
-
-Key findings typically show:
-- Daemonic ergotropy often exceeds unconditional (benefit of feedback)
-- Measurement choice (detection type) affects accessible work
-- Detection efficiency η reduces daemonic advantage
-- Steady-state values depend strongly on α/κ parameter
-
-## License
-
-This project is provided as-is for research purposes.
-
-## Author
-
-**edoiannu** - Thesis research contributor
-
----
-
-For questions about the simulation methodology, quantum mechanics foundations, or data interpretation, refer to the associated thesis or contact the author.
+- The parallel scripts reuse existing data: if a process folder already exists with a `_params.dat`/`params.dat` file, the run size (`FINALT`, `dt`, `NTRAJ`) is read from there instead of from `input.dat`, to ensure consistency with the data already present.
+- The number of trajectories (`NTRAJ`) must be a multiple of `CHUNKDIM`, and `CHUNKDIM` must be greater than or equal to the number of active workers.
